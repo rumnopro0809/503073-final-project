@@ -2,6 +2,7 @@
 node_modules/
 dist/
 build/
+build-api/
 coverage/
 .vite/
 *.tsbuildinfo

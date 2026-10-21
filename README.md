@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Đã chuẩn bị tài liệu yêu cầu và kế hoạch cho nhóm hai người. Ứng dụng chưa được triển khai; chưa có lệnh chạy ứng dụng. Không đánh dấu tính năng hoàn thành khi chưa kiểm chứng.
+Ngày 21/10/2026: đã dựng React/TypeScript và Express, đăng ký/đăng nhập/đăng xuất bằng bcrypt và cookie phiên, trang cá nhân được bảo vệ, xác minh email và gửi lại liên kết. Local dùng PostgreSQL nhúng; đặt DATABASE_URL để dùng server PostgreSQL. Trang ghi chú hiện có trạng thái rỗng, chưa có CRUD ghi chú. Chưa triển khai công khai.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 
@@ -12,6 +12,25 @@ Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/ru
 
 - [Yêu cầu và 32 tiêu chí nghiệm thu](REQUIREMENTS.md)
 - [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
+- [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
+
+## Chạy local
+
+Yêu cầu Node.js 22.12 trở lên. Tại thư mục gốc:
+
+```powershell
+npm.cmd ci
+Copy-Item .env.example .env
+npm.cmd run dev
+```
+
+Chỉ sao chép file cấu hình khi chưa có .env. Mở Local URL do Vite in ra; mặc định http://localhost:5173. Backend được gọi qua /api bằng proxy cùng nguồn. Chưa cần cài PostgreSQL hoặc Docker để chạy local: dữ liệu PostgreSQL nhúng lưu ở .data/postgres, thư xác minh thử nghiệm lưu thành .eml ở .data/mail. Các tệp thư local không được gửi tới inbox thật. Xem DAY_01.md để cấu hình SMTP và server PostgreSQL.
+
+```powershell
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
+```
 
 ## Công nghệ đề xuất
 
@@ -23,7 +42,7 @@ Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/ru
 - Email: SMTP; AI: gọi LLM từ backend, cấu hình thông tin dịch vụ qua biến môi trường.
 - Môi trường chạy: Docker Compose; đồng thời chuẩn bị triển khai HTTPS online.
 
-Đây là phương án kỹ thuật đề xuất, chưa phải các dependency đã được cài đặt. Phiên bản và thư viện hỗ trợ sẽ được ghi nhận khi dựng ứng dụng. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
+React, TypeScript, Vite, Express, bcrypt, cookie phiên, PostgreSQL/PGlite và Nodemailer đã được tích hợp ở bước tài khoản. Các phần cộng tác, offline, AI và Docker vẫn là kế hoạch tiếp theo. Dependency được khóa trong package.json và package-lock.json. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
 
 ## Luồng đầu tiên cần hoàn thành
 

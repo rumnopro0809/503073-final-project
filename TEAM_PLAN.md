@@ -10,6 +10,8 @@
 
 Đủ 32 tiêu chí là mục tiêu. Với thời gian trên, đây là kế hoạch khá chặt; không thể bảo đảm đầy đủ trước khi đánh giá tốc độ làm việc và các thử nghiệm cộng tác/offline. Mỗi mốc phải tạo ra phần chạy được và giải thích được. Nếu chậm tiến độ, cập nhật phạm vi đang hoàn thành theo rubric một cách trung thực.
 
+Cập nhật 21/10/2026: bắt đầu triển khai code ngày đầu với cấu trúc ứng dụng và luồng tài khoản. Các mốc 16/10–18/10 bên dưới là kế hoạch ban đầu; phần dựng nền thực tế chuyển sang 21/10. Nếu hạn nộp vẫn khoảng 18/11 thì còn khoảng 28 ngày. Tuần đóng góp đầu tiên 19/10–25/10 vẫn cần kiểm tra riêng cho từng thành viên; commit tài liệu ngày 16/10 không thuộc tuần này.
+
 ## Bốn tuần đóng góp liên tiếp
 
 Các khoảng dưới đây đều là thứ Hai đến Chủ nhật và đều nằm trước mốc nộp dự kiến. Chỉ dùng làm bằng chứng nếu nằm trong giai đoạn phát triển chính thức do thầy quy định.
