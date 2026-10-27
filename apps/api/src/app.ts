@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import path from 'node:path';
 import { authRouter, type AuthOptions } from './auth.js';
+import { notesRouter } from './notes.js';
 
 export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string }) {
   const app = express();
@@ -20,10 +21,12 @@ export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?
     }
     next();
   });
+  app.use('/api/notes', express.json({ limit: '1mb' }));
   app.use(express.json({ limit: '16kb' }));
   app.use(cookieParser());
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   app.use('/api/auth', authRouter(options));
+  app.use('/api/notes', notesRouter(options.db));
   app.use('/api', (_req, res) => res.status(404).json({ message: 'Không tìm thấy yêu cầu này.' }));
   if (options.webDir) {
     app.use(express.static(options.webDir));

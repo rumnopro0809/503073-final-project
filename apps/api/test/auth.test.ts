@@ -185,7 +185,7 @@ test('registration attempts are rate-limited', async () => {
   assert.equal(blocked.status, 429);
 });
 
-test('accounts and sessions survive closing and reopening the development database', async () => {
+test('accounts, sessions and notes survive closing and reopening the development database', async () => {
   await mkdir(path.resolve('.data'), { recursive: true });
   const folder = await mkdtemp(path.resolve('.data/test-auth-'));
   let persistent = await openDatabase({ directory: folder });
@@ -195,11 +195,17 @@ test('accounts and sessions survive closing and reopening the development databa
     const result = await request(firstApp).post('/api/auth/register').set('X-Requested-With', 'GhiChu').send(base);
     assert.equal(result.status, 201);
     const cookie = cookieOf(result);
+    const created = await request(firstApp).post('/api/notes').set('X-Requested-With', 'GhiChu')
+      .set('Cookie', cookie).send({ title: 'Lưu xuống đĩa', content: 'Ghi chú còn nguyên khi mở lại database.' });
+    assert.equal(created.status, 201);
     await persistent.close();
     persistent = await openDatabase({ directory: folder });
     await migrate(persistent);
     const reopened = createApp({ ...options(), db: persistent });
     assert.equal((await request(reopened).get('/api/auth/me').set('Cookie', cookie)).status, 200);
+    const note = await request(reopened).get(`/api/notes/${created.body.note.id}`).set('Cookie', cookie);
+    assert.equal(note.status, 200);
+    assert.deepEqual(note.body.note, created.body.note);
     const saved = await persistent.query<{ token_hash: string }>('SELECT token_hash FROM sessions');
     assert.equal(saved.rows[0].token_hash, createHash('sha256').update(cookie.split('=')[1]).digest('hex'));
   } finally {

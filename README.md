@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Ngày 21/10/2026: đã dựng React/TypeScript và Express, đăng ký/đăng nhập/đăng xuất bằng bcrypt và cookie phiên, trang cá nhân được bảo vệ, xác minh email và gửi lại liên kết. Local dùng PostgreSQL nhúng; đặt DATABASE_URL để dùng server PostgreSQL. Trang ghi chú hiện có trạng thái rỗng, chưa có CRUD ghi chú. Chưa triển khai công khai.
+Ngày 27/10/2026: có React/TypeScript và Express, đăng ký/đăng nhập/đăng xuất bằng bcrypt và cookie phiên, trang cá nhân được bảo vệ, xác minh email và gửi lại liên kết. Đã thêm database và API tạo/xem/sửa/xóa ghi chú theo chủ sở hữu, phân trang và phát hiện xung đột phiên bản. Local dùng PostgreSQL nhúng; đặt DATABASE_URL để dùng server PostgreSQL. Giao diện ghi chú vẫn là trạng thái rỗng, chưa nối API hoặc có trình sửa/tự lưu. Chưa triển khai công khai.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 
@@ -13,6 +13,7 @@ Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/ru
 - [Yêu cầu và 32 tiêu chí nghiệm thu](REQUIREMENTS.md)
 - [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
 - [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
+- [Database và API ghi chú ngày 27 tháng 10](DAY_02.md)
 
 ## Chạy local
 

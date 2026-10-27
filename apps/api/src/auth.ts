@@ -1,18 +1,17 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import type { Database, Sql } from './database.js';
 import type { SendVerification } from './mail.js';
+import { SESSION_COOKIE as COOKIE, hashToken as tokenHash, findSessionUser, type SessionUser } from './session.js';
 
-const COOKIE = 'ghichu_session';
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
-const tokenHash = (value: string) => createHash('sha256').update(value).digest('hex');
 const newToken = () => randomBytes(32).toString('hex');
 type UserRow = Record<string, unknown> & {
   id: string; email: string; display_name: string; email_verified_at: Date | null; password_hash: string;
 };
-const publicUser = (u: UserRow) => ({ id: u.id, email: u.email, displayName: u.display_name, emailVerified: Boolean(u.email_verified_at) });
+const publicUser = (u: SessionUser) => ({ id: u.id, email: u.email, displayName: u.display_name, emailVerified: Boolean(u.email_verified_at) });
 const cookieOptions = (production: boolean) => ({ httpOnly: true, sameSite: 'lax' as const, secure: production, path: '/' });
 
 export interface AuthOptions { db: Database; appUrl: string; production: boolean; sendVerification: SendVerification; rateLimit?: boolean; }
@@ -27,13 +26,7 @@ export function authRouter(options: AuthOptions) {
   });
 
   async function currentUser(req: Request) {
-    const token = req.cookies?.[COOKIE];
-    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return undefined;
-    const { rows } = await db.query<UserRow>(
-      `SELECT u.* FROM users u JOIN sessions s ON s.user_id = u.id
-       WHERE s.token_hash = $1 AND s.expires_at > NOW()`, [tokenHash(token)],
-    );
-    return rows[0];
+    return findSessionUser(db, req);
   }
 
   async function createSession(sql: Sql, userId: string, req: Request) {

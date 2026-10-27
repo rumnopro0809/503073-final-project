@@ -12,6 +12,8 @@
 
 Cập nhật 21/10/2026: bắt đầu triển khai code ngày đầu với cấu trúc ứng dụng và luồng tài khoản. Các mốc 16/10–18/10 bên dưới là kế hoạch ban đầu; phần dựng nền thực tế chuyển sang 21/10. Nếu hạn nộp vẫn khoảng 18/11 thì còn khoảng 28 ngày. Tuần đóng góp đầu tiên 19/10–25/10 vẫn cần kiểm tra riêng cho từng thành viên; commit tài liệu ngày 16/10 không thuộc tuần này.
 
+Cập nhật 27/10/2026: hoàn thành backend ghi chú, gồm schema, API tạo/xem/sửa/xóa, phân trang, kiểm tra quyền sở hữu và xung đột phiên bản. 39 bài test và build đạt. Hướng dẫn ở DAY_02.md. Buổi tiếp theo ưu tiên giao diện tạo/sửa chung và tự lưu; chưa đánh dấu chức năng giao diện ghi chú hoàn thành. Mỗi buổi chọn một phần có kết quả kiểm chứng được rồi commit/push theo công việc thực tế, không ép đủ một commit mỗi ngày.
+
 ## Bốn tuần đóng góp liên tiếp
 
 Các khoảng dưới đây đều là thứ Hai đến Chủ nhật và đều nằm trước mốc nộp dự kiến. Chỉ dùng làm bằng chứng nếu nằm trong giai đoạn phát triển chính thức do thầy quy định.

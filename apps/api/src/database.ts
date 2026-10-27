@@ -57,6 +57,17 @@ export async function migrate(db: Database) {
       expires_at TIMESTAMPTZ NOT NULL
     )`);
     await sql.query('CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id)');
+    await sql.query(`CREATE TABLE IF NOT EXISTS notes (
+      id UUID PRIMARY KEY,
+      owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(200) NOT NULL CHECK (char_length(btrim(title)) > 0),
+      content TEXT NOT NULL CHECK (char_length(btrim(content)) BETWEEN 1 AND 100000),
+      version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await sql.query(`CREATE INDEX IF NOT EXISTS notes_owner_updated_idx
+      ON notes(owner_id, updated_at DESC, id DESC)`);
     await sql.query('DELETE FROM sessions WHERE expires_at <= NOW()');
     await sql.query('DELETE FROM verification_tokens WHERE expires_at <= NOW()');
   });
