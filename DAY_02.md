@@ -2,8 +2,6 @@
 
 Đã hoàn thành phần backend quản lý ghi chú: tạo, lấy danh sách, đọc chi tiết, sửa và xóa. Mỗi thao tác kiểm tra phiên đăng nhập và quyền sở hữu ở server. Đây là bước nền để nối giao diện tạo/sửa chung và tự lưu trong buổi tiếp theo.
 
-Kiểm chứng: 39 bài test đạt, gồm 17 bài tài khoản và 22 bài ghi chú; TypeScript và build frontend/backend đạt. PostgreSQL nhúng đã được kiểm tra; server PostgreSQL riêng chưa có môi trường để kiểm chứng. Không đánh dấu toàn bộ tiêu chí giao diện ghi chú hay tự lưu là hoàn thành ở bước backend này.
-
 ## Các file cần đọc
 
 - apps/api/src/session.ts: tìm tài khoản từ cookie và phiên trong database; dùng chung cho tài khoản và ghi chú.
