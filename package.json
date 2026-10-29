@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
     "build": "npm run typecheck && vite build --config apps/web/vite.config.ts && tsc -p apps/api/tsconfig.build.json",
     "start": "node build/api/index.js",
-    "test": "tsx --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts"
+    "test": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts apps/web/test/notes-ui.test.tsx",
+    "test:web": "tsx --tsconfig apps/web/tsconfig.json --test apps/web/test/notes-ui.test.tsx"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.10",
@@ -31,8 +32,11 @@
     "react-router-dom": "7.18.4"
   },
   "devDependencies": {
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
     "@types/cookie-parser": "1.4.10",
     "@types/express": "5.0.6",
+    "@types/jsdom": "21.1.7",
     "@types/node": "24.19.2",
     "@types/nodemailer": "8.0.2",
     "@types/pg": "8.23.1",
@@ -40,6 +44,7 @@
     "@types/react-dom": "19.3.0",
     "@types/supertest": "7.2.1",
     "concurrently": "10.0.6",
+    "jsdom": "26.1.0",
     "supertest": "7.3.1",
     "tsx": "4.23.15",
     "typescript": "7.0.2",

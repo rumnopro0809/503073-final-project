@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Ngày 27/10/2026: có React/TypeScript và Express, đăng ký/đăng nhập/đăng xuất bằng bcrypt và cookie phiên, trang cá nhân được bảo vệ, xác minh email và gửi lại liên kết. Đã thêm database và API tạo/xem/sửa/xóa ghi chú theo chủ sở hữu, phân trang và phát hiện xung đột phiên bản. Local dùng PostgreSQL nhúng; đặt DATABASE_URL để dùng server PostgreSQL. Giao diện ghi chú vẫn là trạng thái rỗng, chưa nối API hoặc có trình sửa/tự lưu. Chưa triển khai công khai.
+Ngày 29/10/2026: có tài khoản, xác minh email, database/API ghi chú riêng theo chủ sở hữu và kiểm tra xung đột phiên bản. Giao diện đã hiển thị danh sách thật, tải thêm và dùng chung một editor cho tạo/sửa. Nội dung đang nhập hiện là bản nháp chưa lưu; chờ ghép phần tự lưu của Thái. Local dùng PostgreSQL nhúng; server PostgreSQL riêng, SMTP thật và triển khai công khai vẫn cần cấu hình/kiểm chứng. Hạn nộp đã xác nhận là 23:59 ngày 03/11/2026.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 
@@ -14,6 +14,8 @@ Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/ru
 - [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
 - [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
 - [Database và API ghi chú ngày 27 tháng 10](DAY_02.md)
+- [Giao diện và điểm ghép tự lưu cho Thái](FRONTEND_HANDOFF.md)
+- [Sprint tới hạn nộp ngày 3 tháng 11](SPRINT.md)
 
 ## Chạy local
 

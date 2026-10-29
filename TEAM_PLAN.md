@@ -3,10 +3,10 @@
 ## Dữ kiện và giới hạn
 
 - Ngày lập: 16/10/2026, múi giờ Việt Nam.
-- Còn khoảng 33 ngày; 18/11/2026 là mốc suy ra để lập kế hoạch, chưa phải deadline được xác nhận.
+- Hạn nộp được xác nhận lại ngày 29/10: 23:59 ngày 03/11/2026, giờ Việt Nam. Mốc 18/11 trước đây là ước tính đã được thay thế; kế hoạch hiện hành ở SPRINT.md.
 - Hai người, mỗi người 1–2 giờ/ngày: khoảng 66–132 giờ công cho 33 ngày.
 - Chủ tài khoản GitHub đã xác nhận: rumnopro0809; repository 503073-final-project đã được tạo ở chế độ riêng tư.
-- Cần xác nhận username thành viên còn lại và thời gian phát triển chính thức của môn.
+- Thành viên còn lại là Thái, phụ trách tự lưu theo phân công; chưa có username GitHub trong chat. Thời gian có thể tăng cho sprint, chưa chốt số giờ cụ thể.
 
 Đủ 32 tiêu chí là mục tiêu. Với thời gian trên, đây là kế hoạch khá chặt; không thể bảo đảm đầy đủ trước khi đánh giá tốc độ làm việc và các thử nghiệm cộng tác/offline. Mỗi mốc phải tạo ra phần chạy được và giải thích được. Nếu chậm tiến độ, cập nhật phạm vi đang hoàn thành theo rubric một cách trung thực.
 
@@ -15,6 +15,8 @@ Cập nhật 21/10/2026: bắt đầu triển khai code ngày đầu với cấu
 Cập nhật 27/10/2026: hoàn thành backend ghi chú, gồm schema, API tạo/xem/sửa/xóa, phân trang, kiểm tra quyền sở hữu và xung đột phiên bản. 39 bài test và build đạt. Hướng dẫn ở DAY_02.md. Buổi tiếp theo ưu tiên giao diện tạo/sửa chung và tự lưu; chưa đánh dấu chức năng giao diện ghi chú hoàn thành. Mỗi buổi chọn một phần có kết quả kiểm chứng được rồi commit/push theo công việc thực tế, không ép đủ một commit mỗi ngày.
 
 ## Bốn tuần đóng góp liên tiếp
+
+Lưu ý cập nhật 29/10: bảng dưới là lịch tham chiếu ban đầu, có mốc sau hạn nộp mới 03/11 nên không còn là lịch làm việc hiện hành. Giữ đúng yêu cầu đóng góp thật của đề và đối chiếu lịch sử đã có; dùng SPRINT.md để tổ chức công việc còn lại.
 
 Các khoảng dưới đây đều là thứ Hai đến Chủ nhật và đều nằm trước mốc nộp dự kiến. Chỉ dùng làm bằng chứng nếu nằm trong giai đoạn phát triển chính thức do thầy quy định.
 

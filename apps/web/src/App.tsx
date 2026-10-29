@@ -1,7 +1,8 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, LogOut, Mail, ShieldCheck, Sparkles, StickyNote, UserRound } from 'lucide-react';
 import { api, ApiError, type User } from './api';
+import { NotesWorkspace } from './components/NotesWorkspace';
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>ghi chú<span className="brand-dot">.</span></span></div>;
@@ -119,13 +120,16 @@ function AuthPage({ mode, onAuthenticated }: { mode: 'login' | 'register'; onAut
 }
 
 function Home({ user, onLogout, emailFailed }: { user: User; onLogout: () => void; emailFailed: boolean }) {
+  const [draftDirty, setDraftDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const location = useLocation();
+
   useEffect(() => { document.title = 'Ghi chú của bạn — Ghi chú'; }, []);
   async function logout() {
+    if (draftDirty && !window.confirm('Bản nháp chưa được lưu. Bạn có muốn bỏ thay đổi và đăng xuất?')) return;
     setBusy(true); setError('');
     try { await api('/auth/logout', {}); onLogout(); }
     catch (failure) { setError((failure as Error).message); }
@@ -146,7 +150,7 @@ function Home({ user, onLogout, emailFailed }: { user: User; onLogout: () => voi
       {error && <div className="notice error" role="alert">{error}</div>}
       {message && <div className="notice success" role="status">{message}</div>}
       <div className="workspace-intro"><span className="eyebrow">KHÔNG GIAN CỦA BẠN</span><h1>Ghi chú của bạn<span>.</span></h1><p>Chào {user.displayName}, hôm nay bạn muốn ghi nhớ điều gì?</p></div>
-      <section className="empty-notes" aria-label="Danh sách ghi chú"><div className="empty-illustration"><StickyNote size={46} strokeWidth={1.1} /><span className="empty-spark">✳</span></div><h2>Mọi ý tưởng đều có điểm bắt đầu.</h2><p>Bạn chưa có ghi chú nào.<br />Một không gian mới đang chờ những điều bạn muốn nhớ.</p><span className="empty-caption"><LockKeyhole size={13} /> KHÔNG GIAN RIÊNG TƯ</span></section>
+      <NotesWorkspace onSessionExpired={onLogout} onDirtyChange={setDraftDirty} />
     </main>
     <footer className="workspace-footer">Một chút ngăn nắp, mỗi ngày.</footer>
   </div>;
@@ -157,6 +161,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState('');
   const [emailFailed, setEmailFailed] = useState(false);
+  const clearSession = useCallback(() => { setUser(null); setEmailFailed(false); }, []);
   async function refresh(initial = false) {
     try { const result = await api<{ user: User }>('/auth/me'); setUser(result.user); setConnectionError(''); }
     catch (error) {
@@ -178,7 +183,7 @@ export function App() {
   return <Routes>
     <Route path="/login" element={user ? <Navigate to={`/${window.location.search}`} replace /> : <AuthPage key="login" mode="login" onAuthenticated={onAuthenticated} />} />
     <Route path="/register" element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={onAuthenticated} />} />
-    <Route path="/" element={user ? <Home user={user} emailFailed={emailFailed} onLogout={() => { setUser(null); setEmailFailed(false); }} /> : <Navigate to={`/login${window.location.search}`} replace />} />
+    <Route path="/" element={user ? <Home key={user.id} user={user} emailFailed={emailFailed} onLogout={clearSession} /> : <Navigate to={`/login${window.location.search}`} replace />} />
     <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
   </Routes>;
 }
