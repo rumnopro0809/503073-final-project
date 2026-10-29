@@ -68,6 +68,9 @@ export async function migrate(db: Database) {
     )`);
     await sql.query(`CREATE INDEX IF NOT EXISTS notes_owner_updated_idx
       ON notes(owner_id, updated_at DESC, id DESC)`);
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS creation_key UUID');
+    await sql.query(`CREATE UNIQUE INDEX IF NOT EXISTS notes_owner_creation_key_idx
+      ON notes(owner_id, creation_key) WHERE creation_key IS NOT NULL`);
     await sql.query('DELETE FROM sessions WHERE expires_at <= NOW()');
     await sql.query('DELETE FROM verification_tokens WHERE expires_at <= NOW()');
   });

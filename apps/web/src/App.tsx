@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, LogOut, Mail, ShieldCheck, Sparkles, StickyNote, UserRound } from 'lucide-react';
 import { api, ApiError, type User } from './api';
@@ -51,9 +51,9 @@ function Field({ label, name, value, onChange, error, type = 'text', autoComplet
   </div>;
 }
 
-function AuthPage({ mode, onAuthenticated }: { mode: 'login' | 'register'; onAuthenticated: (user: User, delivery?: string) => void }) {
+function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'register'; onAuthenticated: (user: User, delivery?: string) => void; reauthEmail?: string }) {
   const register = mode === 'register';
-  const [values, setValues] = useState({ email: '', displayName: '', password: '', confirmPassword: '' });
+  const [values, setValues] = useState({ email: reauthEmail ?? '', displayName: '', password: '', confirmPassword: '' });
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -91,19 +91,19 @@ function AuthPage({ mode, onAuthenticated }: { mode: 'login' | 'register'; onAut
     <section className="auth-side" aria-label={register ? 'Đăng ký tài khoản' : 'Đăng nhập tài khoản'}>
       <div className="auth-top"><span>BẠN VÀ NHỮNG Ý TƯỞNG</span><span className="top-flower">✳</span></div>
       <div className="auth-card">
-        <div className="switcher" aria-label="Chọn đăng nhập hoặc đăng ký">
+        {!reauthEmail && <div className="switcher" aria-label="Chọn đăng nhập hoặc đăng ký">
           <Link to="/login" className={!register ? 'active' : ''} aria-current={!register ? 'page' : undefined}>Đăng nhập</Link>
           <Link to="/register" className={register ? 'active' : ''} aria-current={register ? 'page' : undefined}>Đăng ký</Link>
-        </div>
+        </div>}
         <div className="form-heading"><span className="welcome-icon">{register ? <Sparkles size={22} /> : <UserRound size={22} />}</span>
-          <h2>{register ? 'Một khởi đầu mới.' : 'Chào bạn trở lại.'}</h2>
-          <p>{register ? 'Tạo tài khoản, dành một góc nhỏ cho ý tưởng của bạn.' : 'Đăng nhập để trở về với những ghi chú của bạn.'}</p>
+          <h2>{reauthEmail ? 'Đăng nhập lại.' : register ? 'Một khởi đầu mới.' : 'Chào bạn trở lại.'}</h2>
+          <p>{reauthEmail ? 'Phiên đã hết hạn. Bản nháp đang được giữ trên trang; đăng nhập lại để tiếp tục tự lưu.' : register ? 'Tạo tài khoản, dành một góc nhỏ cho ý tưởng của bạn.' : 'Đăng nhập để trở về với những ghi chú của bạn.'}</p>
         </div>
         {verification === 'invalid' && <div className="notice error" role="alert">Liên kết xác minh không hợp lệ hoặc đã hết hạn. Đăng nhập để yêu cầu một email mới.</div>}
         {verification === 'success' && <div className="notice success" role="status">Tài khoản đã được xác minh. Bạn đăng nhập để tiếp tục nhé.</div>}
         <form onSubmit={submit} noValidate aria-busy={busy}>
           {register && <Field label="Tên hiển thị" name="displayName" value={values.displayName} onChange={v => update('displayName', v)} error={fields.displayName} placeholder="Tên bạn muốn mọi người gọi" autoComplete="nickname" disabled={busy} />}
-          <Field label="Email" name="email" value={values.email} onChange={v => update('email', v)} error={fields.email} type="email" placeholder="ban@example.com" autoComplete="email" disabled={busy} />
+          <Field label="Email" name="email" value={values.email} onChange={v => update('email', v)} error={fields.email} type="email" placeholder="ban@example.com" autoComplete="email" disabled={busy || Boolean(reauthEmail)} />
           <Field label="Mật khẩu" name="password" value={values.password} onChange={v => update('password', v)} error={fields.password} type="password" placeholder={register ? 'Tạo mật khẩu của bạn' : 'Nhập mật khẩu của bạn'} autoComplete={register ? 'new-password' : 'current-password'} hint={register ? 'Ít nhất 8 ký tự.' : undefined} disabled={busy} />
           {register && <Field label="Nhập lại mật khẩu" name="confirmPassword" value={values.confirmPassword} onChange={v => update('confirmPassword', v)} error={fields.confirmPassword} type="password" placeholder="Nhập lại mật khẩu vừa tạo" autoComplete="new-password" disabled={busy} />}
           {error && <div className="notice error" role="alert">{error}</div>}
@@ -111,7 +111,7 @@ function AuthPage({ mode, onAuthenticated }: { mode: 'login' | 'register'; onAut
             {busy ? <><LoaderCircle className="spin" size={18} /> Đang xử lý…</> : <>{register ? 'Tạo tài khoản' : 'Đăng nhập'}<ArrowRight size={18} /></>}
           </button>
         </form>
-        <p className="account-prompt">{register ? 'Đã có một góc riêng?' : 'Bạn chưa có tài khoản?'} <Link to={register ? '/login' : '/register'}>{register ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={13} /></Link></p>
+        {!reauthEmail && <p className="account-prompt">{register ? 'Đã có một góc riêng?' : 'Bạn chưa có tài khoản?'} <Link to={register ? '/login' : '/register'}>{register ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={13} /></Link></p>}
         <div className="form-assurance"><ShieldCheck size={15} /><span>Không gian của bạn, chỉ bạn mới có thể truy cập.</span></div>
       </div>
       <footer className="auth-bottom"><span>© {new Date().getFullYear()} ghi chú.</span><span>Viết xuống. Nhẹ đầu hơn.</span></footer>
@@ -119,8 +119,11 @@ function AuthPage({ mode, onAuthenticated }: { mode: 'login' | 'register'; onAut
   </main>;
 }
 
-function Home({ user, onLogout, emailFailed }: { user: User; onLogout: () => void; emailFailed: boolean }) {
+function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRevision }: {
+  user: User; onLogout: () => void; onSessionExpired: () => void; emailFailed: boolean; authenticationRevision: number;
+}) {
   const [draftDirty, setDraftDirty] = useState(false);
+  const beforeLeaveRef = useRef<(() => Promise<boolean>) | null>(null);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState('');
@@ -129,7 +132,8 @@ function Home({ user, onLogout, emailFailed }: { user: User; onLogout: () => voi
 
   useEffect(() => { document.title = 'Ghi chú của bạn — Ghi chú'; }, []);
   async function logout() {
-    if (draftDirty && !window.confirm('Bản nháp chưa được lưu. Bạn có muốn bỏ thay đổi và đăng xuất?')) return;
+    if (beforeLeaveRef.current) { if (!await beforeLeaveRef.current()) return; }
+    else if (draftDirty && !window.confirm('Bản nháp chưa được lưu. Bạn có muốn bỏ thay đổi và đăng xuất?')) return;
     setBusy(true); setError('');
     try { await api('/auth/logout', {}); onLogout(); }
     catch (failure) { setError((failure as Error).message); }
@@ -150,7 +154,8 @@ function Home({ user, onLogout, emailFailed }: { user: User; onLogout: () => voi
       {error && <div className="notice error" role="alert">{error}</div>}
       {message && <div className="notice success" role="status">{message}</div>}
       <div className="workspace-intro"><span className="eyebrow">KHÔNG GIAN CỦA BẠN</span><h1>Ghi chú của bạn<span>.</span></h1><p>Chào {user.displayName}, hôm nay bạn muốn ghi nhớ điều gì?</p></div>
-      <NotesWorkspace onSessionExpired={onLogout} onDirtyChange={setDraftDirty} />
+      <NotesWorkspace onSessionExpired={onSessionExpired} onDirtyChange={setDraftDirty}
+        authenticationRevision={authenticationRevision} beforeLeaveRef={beforeLeaveRef} />
     </main>
     <footer className="workspace-footer">Một chút ngăn nắp, mỗi ngày.</footer>
   </div>;
@@ -161,11 +166,17 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState('');
   const [emailFailed, setEmailFailed] = useState(false);
-  const clearSession = useCallback(() => { setUser(null); setEmailFailed(false); }, []);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [authenticationRevision, setAuthenticationRevision] = useState(0);
+  const requireAuthentication = useCallback(() => { setSessionExpired(true); }, []);
+  const clearSession = useCallback(() => { setUser(null); setEmailFailed(false); setSessionExpired(false); }, []);
   async function refresh(initial = false) {
     try { const result = await api<{ user: User }>('/auth/me'); setUser(result.user); setConnectionError(''); }
     catch (error) {
-      if (error instanceof ApiError && error.status === 401) { setUser(null); setConnectionError(''); }
+      if (error instanceof ApiError && error.status === 401) {
+        if (user) setSessionExpired(true); else setUser(null);
+        setConnectionError('');
+      }
       else if (initial) setConnectionError((error as Error).message);
     } finally { if (initial) setLoading(false); }
   }
@@ -179,11 +190,14 @@ export function App() {
     return () => window.removeEventListener('focus', onFocus);
   }, [user?.id]);
   if (loading || connectionError) return <main className="loading-screen"><Brand />{loading ? <><LoaderCircle className="spin" /><p>Đang mở không gian của bạn…</p></> : <><p role="alert">{connectionError}</p><button className="primary-button" onClick={() => { setLoading(true); setConnectionError(''); void refresh(true); }}>Thử kết nối lại <ArrowRight size={16} /></button></>}</main>;
-  const onAuthenticated = (next: User, delivery?: string) => { setUser(next); setEmailFailed(delivery === 'failed'); };
-  return <Routes>
+  const onAuthenticated = (next: User, delivery?: string) => {
+    setUser(next); setEmailFailed(delivery === 'failed'); setSessionExpired(false); setAuthenticationRevision(value => value + 1);
+  };
+  return <><div hidden={sessionExpired}><Routes>
     <Route path="/login" element={user ? <Navigate to={`/${window.location.search}`} replace /> : <AuthPage key="login" mode="login" onAuthenticated={onAuthenticated} />} />
     <Route path="/register" element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={onAuthenticated} />} />
-    <Route path="/" element={user ? <Home key={user.id} user={user} emailFailed={emailFailed} onLogout={clearSession} /> : <Navigate to={`/login${window.location.search}`} replace />} />
+    <Route path="/" element={user ? <Home key={user.id} user={user} emailFailed={emailFailed} onLogout={clearSession}
+      onSessionExpired={requireAuthentication} authenticationRevision={authenticationRevision} /> : <Navigate to={`/login${window.location.search}`} replace />} />
     <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
-  </Routes>;
+  </Routes></div>{sessionExpired && user && <AuthPage key="reauthenticate" mode="login" reauthEmail={user.email} onAuthenticated={onAuthenticated} />}</>;
 }

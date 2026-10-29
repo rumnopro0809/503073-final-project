@@ -80,12 +80,18 @@ export function notesRouter(db: Database) {
   });
 
   router.post('/', async (req, res) => {
+    const creationKey = req.get('Idempotency-Key');
+    if (creationKey !== undefined && !UUID.test(creationKey)) {
+      res.status(422).json({ message: 'Mã yêu cầu tạo ghi chú không hợp lệ.' }); return;
+    }
     const { fields, title, content } = validateBody(req.body, false);
     if (Object.keys(fields).length) { res.status(422).json({ message: 'Bạn kiểm tra lại thông tin ghi chú nhé.', fields }); return; }
     const { rows } = await db.query<NoteRow>(
-      `INSERT INTO notes(id, owner_id, title, content) VALUES ($1, $2, $3, $4)
+      `INSERT INTO notes(id, owner_id, title, content, creation_key) VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (owner_id, creation_key) WHERE creation_key IS NOT NULL
+       DO UPDATE SET creation_key = EXCLUDED.creation_key
        RETURNING id, title, content, version, created_at, updated_at`,
-      [randomUUID(), res.locals.ownerId, title, content],
+      [randomUUID(), res.locals.ownerId, title, content, creationKey ?? null],
     );
     res.location(`/api/notes/${rows[0].id}`).status(201).json({ note: publicNote(rows[0]) });
   });

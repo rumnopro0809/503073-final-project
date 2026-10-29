@@ -79,6 +79,36 @@ test('a note requires only title and content and returns its resource location',
   assert.deepEqual(Object.keys(response.body.note).sort(), ['content', 'createdAt', 'id', 'title', 'updatedAt', 'version']);
 });
 
+test('retrying creation with the same key returns the original note without duplicates', async () => {
+  const key = randomUUID();
+  const first = await request(app).post('/api/notes').set(headers).set('Idempotency-Key', key).set('Cookie', alice).send(payload);
+  const again = await request(app).post('/api/notes').set(headers).set('Idempotency-Key', key).set('Cookie', alice)
+    .send({ title: 'Nội dung gõ tiếp', content: 'Client sẽ PATCH sau khi biết ID.' });
+  assert.equal(first.status, 201);
+  assert.equal(again.status, 201);
+  assert.deepEqual(again.body.note, first.body.note);
+  assert.equal((await db.query('SELECT id FROM notes')).rows.length, 1);
+});
+
+test('concurrent creation retries are atomic and keys are scoped to each owner', async () => {
+  const key = randomUUID();
+  const requests = await Promise.all([1, 2].map(() => request(app).post('/api/notes').set(headers)
+    .set('Idempotency-Key', key).set('Cookie', alice).send(payload)));
+  assert.equal(requests[0].status, 201);
+  assert.equal(requests[1].status, 201);
+  assert.equal(requests[0].body.note.id, requests[1].body.note.id);
+  const other = await request(app).post('/api/notes').set(headers).set('Idempotency-Key', key).set('Cookie', bob).send(payload);
+  assert.equal(other.status, 201);
+  assert.notEqual(other.body.note.id, requests[0].body.note.id);
+  assert.equal((await db.query('SELECT id FROM notes')).rows.length, 2);
+});
+
+test('an invalid creation key is rejected', async () => {
+  const result = await request(app).post('/api/notes').set(headers).set('Idempotency-Key', 'invalid').set('Cookie', alice).send(payload);
+  assert.equal(result.status, 422);
+  assert.equal((await db.query('SELECT id FROM notes')).rows.length, 0);
+});
+
 test('the owner is derived from the session and cannot be supplied by a client', async () => {
   for (const forged of [{ ownerId: bobId }, { owner_id: bobId }, { id: randomUUID() }, { version: 99 }]) {
     const result = await request(app).post('/api/notes').set(headers).set('Cookie', alice).send({ ...payload, ...forged });

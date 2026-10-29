@@ -2,7 +2,8 @@ export interface User { id: string; email: string; displayName: string; emailVer
 export class ApiError extends Error {
   constructor(message: string, public status: number, public fields: Record<string, string> = {}) { super(message); }
 }
-export async function api<T>(url: string, body?: unknown, options: { signal?: AbortSignal } = {}): Promise<T> {
+export interface ApiOptions { signal?: AbortSignal; method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; idempotencyKey?: string; }
+export async function api<T>(url: string, body?: unknown, options: ApiOptions = {}): Promise<T> {
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (options.signal?.aborted) cancel();
@@ -10,8 +11,11 @@ export async function api<T>(url: string, body?: unknown, options: { signal?: Ab
   const timeout = window.setTimeout(() => controller.abort(), 20_000);
   try {
     const response = await fetch(`/api${url}`, {
-      method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', signal: controller.signal,
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json', 'X-Requested-With': 'GhiChu' },
+      method: options.method ?? (body === undefined ? 'GET' : 'POST'), credentials: 'same-origin', signal: controller.signal,
+      headers: {
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'X-Requested-With': 'GhiChu' }),
+        ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (response.status === 204) return undefined as T;

@@ -14,6 +14,8 @@ Cập nhật 21/10/2026: bắt đầu triển khai code ngày đầu với cấu
 
 Cập nhật 27/10/2026: hoàn thành backend ghi chú, gồm schema, API tạo/xem/sửa/xóa, phân trang, kiểm tra quyền sở hữu và xung đột phiên bản. 39 bài test và build đạt. Hướng dẫn ở DAY_02.md. Buổi tiếp theo ưu tiên giao diện tạo/sửa chung và tự lưu; chưa đánh dấu chức năng giao diện ghi chú hoàn thành. Mỗi buổi chọn một phần có kết quả kiểm chứng được rồi commit/push theo công việc thực tế, không ép đủ một commit mỗi ngày.
 
+Cập nhật 29/10/2026: người dùng yêu cầu trợ lý triển khai luôn phần tự lưu trước đây giao cho Thái. Core đã có tạo/tự lưu/sửa, xử lý thử lại và xung đột, đăng nhập lại giữ editor, xóa có xác nhận và lưới/danh sách. 82 bài test và build đạt. Demo thử chốt ngày 31/10, kịch bản ở DEMO_31_10.md; kế hoạch ưu tiên hiện hành ở SPRINT.md. Những phần được trợ lý triển khai không tự quy thành đóng góp độc lập của Thái.
+
 ## Bốn tuần đóng góp liên tiếp
 
 Lưu ý cập nhật 29/10: bảng dưới là lịch tham chiếu ban đầu, có mốc sau hạn nộp mới 03/11 nên không còn là lịch làm việc hiện hành. Giữ đúng yêu cầu đóng góp thật của đề và đối chiếu lịch sử đã có; dùng SPRINT.md để tổ chức công việc còn lại.

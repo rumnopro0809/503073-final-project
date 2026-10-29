@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
     "build": "npm run typecheck && vite build --config apps/web/vite.config.ts && tsc -p apps/api/tsconfig.build.json",
     "start": "node build/api/index.js",
-    "test": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts apps/web/test/notes-ui.test.tsx",
-    "test:web": "tsx --tsconfig apps/web/tsconfig.json --test apps/web/test/notes-ui.test.tsx"
+    "test": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts apps/web/test/autosave.test.ts apps/web/test/notes-ui.test.tsx apps/web/test/autosave-api.test.ts",
+    "test:web": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/web/test/autosave.test.ts apps/web/test/notes-ui.test.tsx"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.10",

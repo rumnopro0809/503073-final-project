@@ -39,6 +39,8 @@ Tất cả endpoint cần đăng nhập. Request thay đổi dữ liệu cần C
 
 Danh sách có dạng { notes: [...], pagination: { limit, offset, hasMore } }. Mỗi note có id, title, content, version, createdAt và updatedAt; không trả thông tin phiên hoặc mật khẩu tài khoản. Nếu thời điểm sửa bằng nhau, server sắp thêm theo id để thứ tự phân trang ổn định khi tập dữ liệu không đổi.
 
+Cập nhật 29/10: POST hỗ trợ header Idempotency-Key là UUID do client sinh cho một lần tạo. Gửi lại cùng mã trong cùng tài khoản trả ghi chú đã tạo thay vì tạo trùng, kể cả khi request trùng đến đồng thời. Nếu ghi chú đã được sửa sau lần tạo, phản hồi là bản hiện tại; client phải đối chiếu nếu khác nội dung đang chờ lưu. Không gửi mã này như một trường nhập trong body. Mã tạo được lưu ở creation_key, tách theo owner_id.
+
 Mã lỗi cần hiểu:
 
 - 401: chưa đăng nhập, phiên đã hết hạn hoặc đã đăng xuất.
