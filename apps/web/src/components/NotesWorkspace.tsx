@@ -7,6 +7,8 @@ import { useNoteAutosave } from '../hooks/useNoteAutosave';
 import { labelsApi, notesApi } from '../notesApi';
 import { LabelManager, type LabelAction } from './LabelManager';
 import { NoteOrganization } from './NoteOrganization';
+import { NoteReminder, type ReminderChanges } from './NoteReminder';
+import { priority, taskState, taskLabel, formatDue, isCompleted } from '../reminders';
 
 interface Props {
   onSessionExpired: () => void; onDirtyChange: (dirty: boolean) => void;
@@ -27,6 +29,12 @@ function mergeNotes(filters: Filters, ...groups: Note[][]) {
     if (!map.has(note.id) || map.get(note.id)!.version <= note.version) map.set(note.id, note);
   }
   return [...map.values()].filter(note => matches(note, filters)).sort((a, b) => {
+    const urgency = priority(a) - priority(b);
+    if (urgency) return urgency;
+    if (priority(a) <= 1 && a.dueAt && b.dueAt) {
+      const deadline = Date.parse(a.dueAt) - Date.parse(b.dueAt);
+      if (deadline) return deadline;
+    }
     const pinned = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
     if (pinned) return pinned;
     if (a.pinned && b.pinned) {
@@ -49,6 +57,10 @@ function listUrl(filters: Filters, offset: number) {
 
 export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef }: Props) {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [reminders, setReminders] = useState<Note[]>([]);
+  const [reminderError, setReminderError] = useState('');
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setClock(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
   const [pagination, setPagination] = useState<NotesResponse['pagination'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,6 +101,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     if (removedIds.current.has(note.id)) return;
     recentSaves.current.set(note.id, { note, revision: ++saveRevision.current });
     setNotes(current => mergeNotes(filtersRef.current, current, [note]));
+    setReminders(current => [...current.filter(item => item.id !== note.id), note].filter(item => !isCompleted(item) && item.dueAt && Date.parse(item.dueAt) <= Date.now() + 86400000));
   }, []);
   const autosave = useNoteAutosave({ onSaved, onAuthenticationRequired: onSessionExpired, authenticationRevision });
   const editor = autosave.state;
@@ -105,6 +118,22 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   }, [editor, navigationBusy]);
 
   const dirty = Boolean(editor?.dirty || editor?.saving);
+  useEffect(() => {
+    const controller = new AbortController();
+    const revision = saveRevision.current;
+    api<{ notes: Note[] }>('/notes/reminders', undefined, { signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return;
+      const saved = [...recentSaves.current.values()].filter(entry => entry.revision > revision).map(entry => entry.note);
+      setReminders(mergeNotes({ q: '', pinned: false, labelId: '', sort: 'updated' }, Array.isArray(result.notes) ? result.notes : [], saved)
+        .filter(note => !removedIds.current.has(note.id) && !isCompleted(note) && note.dueAt && Date.parse(note.dueAt) <= Date.now() + 86400000));
+      setReminderError('');
+    }).catch(failure => {
+      if (controller.signal.aborted) return;
+      if (failure instanceof ApiError && failure.status === 401) onSessionExpired();
+      else setReminderError('Chưa cập nhật được nhắc việc. Bấm Tải lại để thử lại.');
+    });
+    return () => controller.abort();
+  }, [clock, reload, authenticationRevision, onSessionExpired]);
   const prepareToLeave = useCallback(async () => {
     if (navigating.current) return false;
     navigating.current = true; setNavigationBusy(true);
@@ -239,6 +268,18 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       setActionMessage('pinned' in intent ? intent.pinned ? 'Đã ghim ghi chú lên đầu danh sách.' : 'Đã bỏ ghim ghi chú.' : 'Đã cập nhật nhãn của ghi chú.');
     });
   }
+  async function changeReminder(changes: ReminderChanges, target?: Note) {
+    const id = target?.id ?? autosave.getState()?.note?.id;
+    if (!id) return false;
+    return organizedAction(async () => {
+      const current = await notesApi.read(id);
+      const updated = await notesApi.reminder(current, changes);
+      onSaved(updated);
+      if (autosave.getState()?.note?.id === id) autosave.open(updated);
+      setReload(value => value + 1);
+      setActionMessage('Đã cập nhật nhắc việc.');
+    });
+  }
   async function changeLabel(action: LabelAction) {
     return organizedAction(async () => {
       labelsGeneration.current++;
@@ -282,6 +323,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       catch (failure) { if (!(failure instanceof ApiError && failure.status === 404)) throw failure; }
       removedIds.current.add(id); recentSaves.current.delete(id);
       setNotes(current => current.filter(note => note.id !== id));
+      setReminders(current => current.filter(note => note.id !== id));
       restoreNewFocus.current = true; autosave.close(); cancelOpening();
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 401) onSessionExpired();
@@ -310,6 +352,15 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   }
 
   return <section className="notes-workspace" aria-label="Không gian ghi chú">
+    {reminderError && <p className="field-error">{reminderError}</p>}
+    {reminders.length > 0 && <section className="reminder-notifications" aria-label="Thông báo nhắc việc" aria-live="polite">
+      <h2>Cần bạn chú ý · {reminders.length}{reminders.length === 100 ? '+' : ''}</h2>
+      <p>Nhắc trong ứng dụng khi trang đang mở. Việc quá hạn và sắp đến hạn được ưu tiên trước ghim.</p>
+      {mergeNotes({ q: '', pinned: false, labelId: '', sort: 'updated' }, reminders).slice(0,5).map(note => <div key={note.id} className={`reminder-notification task-${taskState(note)}`}>
+        <button type="button" className="quiet-button" disabled={navigationBusy} onClick={() => void openNote(note)}>{taskLabel(note)} · {note.title} · {formatDue(note.dueAt!)}</button>
+        <button type="button" className="quiet-button" disabled={navigationBusy} onClick={() => void changeReminder({ completed: true }, note)}>Đánh dấu hoàn thành {note.title}</button>
+      </div>)}
+    </section>}
     <div className="notes-toolbar">
       <div><h2>Những điều muốn nhớ</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
       <div className="notes-actions">
@@ -339,7 +390,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         <option value="updated">Vừa chỉnh sửa</option><option value="created">Mới tạo</option><option value="title">Tiêu đề A–Z</option></select></label>
       {(filtered || search) && <button type="button" className="quiet-button clear-filters" onClick={clearFilters}><X size={14} />Xóa bộ lọc</button>}
     </div>
-    <p className="notes-order-hint"><Pin size={12} />Ghi chú đã ghim luôn ở đầu danh sách.</p>
+    <p className="notes-order-hint"><Pin size={12} />Ưu tiên việc quá hạn, sắp đến hạn, quan trọng; sau đó đến ghi chú ghim.</p>
     {labelsError && <div className="labels-load-error"><p className="notice error" role="alert">Không tải được nhãn: {labelsError}</p>
       <button type="button" className="quiet-button" onClick={() => setLabelsReload(value => value + 1)}>Thử tải nhãn lại</button></div>}
     {showLabels && <LabelManager labels={labels} busy={navigationBusy} onAction={changeLabel} onClose={() => { setShowLabels(false); labelManagerButton.current?.focus(); }} />}
@@ -350,9 +401,10 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       onChange={changeDraft} onClose={() => void closeEditor()} disabled={navigationBusy}
       saveStatus={editor.status} saveError={editor.error} fieldErrors={editor.fields}
       onRetry={() => void autosave.retry()} onDelete={() => void deleteNote()}
-      organization={<NoteOrganization note={editor.note} labels={labels} disabled={navigationBusy}
+      organization={<><NoteOrganization note={editor.note} labels={labels} disabled={navigationBusy}
         onPin={pinned => void organizeNote({ pinned })} onLabel={(id, checked) => void organizeNote({ labelId: id, checked })}
-        onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />} />}
+        onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />
+        {editor.note && <NoteReminder key={`${editor.note.id}-${editor.note.dueAt}-${editor.note.daily}`} note={editor.note} busy={navigationBusy} onChange={changeReminder} />}</>} />}
     {editor?.status === 'conflict' && <section className="note-conflict" aria-label="Đối chiếu thay đổi">
       <h3>Ghi chú đã được sửa ở một phiên khác</h3>
       <p>Nội dung đang nhập của bạn vẫn được giữ. Đọc bản mới trước khi chọn cách tiếp tục.</p>
@@ -376,10 +428,12 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         {filtered ? <><p>Thử từ khóa khác hoặc bỏ bớt bộ lọc.</p><button type="button" className="quiet-button" onClick={clearFilters}>Hiện tất cả ghi chú</button></>
           : <p>Bạn chưa có ghi chú nào.<br />Bắt đầu bằng nút Ghi chú mới ở phía trên.</p>}</div>
       : <div className={`notes-grid ${view === 'list' ? 'view-list' : ''}`} aria-label="Danh sách ghi chú">
-        {notes.map(note => <button type="button" disabled={navigationBusy} className={`note-card ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
+        {mergeNotes(filters, notes).map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
           onClick={() => void openNote(note)} aria-pressed={editor?.note?.id === note.id} aria-label={`Mở ghi chú ${note.title}`}>
           <span className="note-card-corner">{note.pinned ? <span className="note-pinned-badge"><Pin size={14} />Đã ghim</span> : <StickyNote size={16} />}</span>
           <h3>{note.title}</h3><p>{note.content}</p>
+          {taskLabel(note) && <span className="task-badge">{taskLabel(note)}</span>}
+          {note.dueAt && <span className="task-deadline">Hạn: {formatDue(note.dueAt)}</span>}
           {(note.labels ?? []).length > 0 && <span className="note-labels">{note.labels.map(label => <span className="label-chip" key={label.id}><i style={{ backgroundColor: label.color }} />{label.name}</span>)}</span>}
           <time dateTime={note.updatedAt}>Sửa {new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(note.updatedAt))}</time>
         </button>)}

@@ -5,7 +5,7 @@ import { NoteAutosaver, type NoteTransport } from '../src/autosave/NoteAutosaver
 import { ApiError } from '../src/api';
 import type { Note, NoteDraft } from '../src/types/notes';
 
-const original: Note = { id: 'note-a', title: 'Tiêu đề', content: 'Nội dung cũ', pinned: false, pinnedAt: null, labels: [], version: 1, createdAt: '2026-10-29T00:00:00Z', updatedAt: '2026-10-29T00:00:00Z' };
+const original: Note = { id: 'note-a', title: 'Tiêu đề', content: 'Nội dung cũ', pinned: false, pinnedAt: null, dueAt: null, completedAt: null, completed: false, important: false, daily: false, labels: [], version: 1, createdAt: '2026-10-29T00:00:00Z', updatedAt: '2026-10-29T00:00:00Z' };
 const engines: NoteAutosaver[] = [];
 afterEach(() => { for (const engine of engines.splice(0)) engine.dispose(); });
 

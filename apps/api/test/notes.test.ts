@@ -106,6 +106,37 @@ test('every notes endpoint requires an authenticated session', async () => {
   assert.equal((await request(app).delete(`/api/notes/${id}`).set(headers).send({})).status, 401);
 });
 
+test('reminders prioritize urgent notes before pins, persist completion and enforce ownership', async () => {
+  const pinned = await createNote(alice, { title: 'Pinned', content: 'later' });
+  await request(app).patch(`/api/notes/${pinned.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true }).expect(200);
+  const urgent = await createNote(alice, { title: 'Urgent', content: 'do it' });
+  const past = new Date(Date.now() - 60000).toISOString();
+  const update = await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, dueAt: past, important: true }).expect(200);
+  assert.equal(update.body.note.dueAt, past); assert.equal(update.body.note.important, true);
+  assert.equal((await request(app).get('/api/notes').set('Cookie', alice)).body.notes[0].id, urgent.id);
+  assert.equal((await request(app).get('/api/notes/reminders').set('Cookie', alice)).body.notes[0].id, urgent.id);
+  assert.deepEqual((await request(app).get('/api/notes/reminders').set('Cookie', bob)).body.notes, []);
+  await request(app).get('/api/notes/reminders').expect(401);
+  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', bob).send({ version: 2, completed: true }).expect(404);
+  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, completed: true }).expect(409);
+  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 2, completed: true }).expect(200);
+  assert.deepEqual((await request(app).get('/api/notes/reminders').set('Cookie', alice)).body.notes, []);
+  const done = (await request(app).get(`/api/notes/${urgent.id}`).set('Cookie', alice)).body.note;
+  assert.equal(done.completed, true); assert.ok(done.completedAt); assert.equal(done.content, 'do it');
+});
+
+test('daily completion resets at Vietnam midnight and invalid reminders do not modify content', async () => {
+  const note = await createNote();
+  for (const changes of [{ dueAt: 'tomorrow' }, { dueAt: '2026-10-30T08:00:00' }, { completed: 'yes' }, { daily: true, dueAt: new Date().toISOString() }, { ownerId: bobId }])
+    await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, ...changes }).expect(422);
+  const daily = await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, daily: true, dueAt: null, completed: true }).expect(200);
+  assert.equal(daily.body.note.completed, true);
+  await db.query("UPDATE notes SET completed_at = NOW() - INTERVAL '2 days' WHERE id=$1", [note.id]);
+  const reopened = (await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note;
+  assert.equal(reopened.daily, true); assert.equal(reopened.completed, false); assert.equal(reopened.content, note.content);
+  await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 2, daily: false, completed: false }).expect(200);
+});
+
 test('an unverified account can create and read its own note', async () => {
   const note = await createNote();
   assert.equal(note.title, payload.title);
@@ -127,7 +158,7 @@ test('a note requires only title and content and returns its resource location',
   const response = await request(app).post('/api/notes').set(headers).set('Cookie', alice).send(payload);
   assert.equal(response.status, 201);
   assert.equal(response.headers.location, `/api/notes/${response.body.note.id}`);
-  assert.deepEqual(Object.keys(response.body.note).sort(), ['content', 'createdAt', 'id', 'labels', 'pinned', 'pinnedAt', 'title', 'updatedAt', 'version']);
+  assert.deepEqual(Object.keys(response.body.note).sort(), ['completed', 'completedAt', 'content', 'createdAt', 'daily', 'dueAt', 'id', 'important', 'labels', 'pinned', 'pinnedAt', 'title', 'updatedAt', 'version']);
 });
 
 test('retrying creation with the same key returns the original note without duplicates', async () => {

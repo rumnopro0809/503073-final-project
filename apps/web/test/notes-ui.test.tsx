@@ -13,6 +13,8 @@ const { render, screen, cleanup, waitFor, act, fireEvent, within } = await impor
 const { default: userEvent } = await import('@testing-library/user-event');
 const { NotesWorkspace } = await import('../src/components/NotesWorkspace');
 const { NoteEditor } = await import('../src/components/NoteEditor');
+const { NoteReminder } = await import('../src/components/NoteReminder');
+const { taskState, priority } = await import('../src/reminders');
 const { App } = await import('../src/App');
 const { MemoryRouter } = await import('react-router-dom');
 const originalFetch = globalThis.fetch;
@@ -20,10 +22,11 @@ const calls: { url: string; method: string; signal?: AbortSignal | null; body?: 
 let respond: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let respondLabels: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let expired: number;
+let reminderNotes: Note[] = [];
 let isDirty: boolean;
 const onExpired = () => { expired++; };
 const onDirty = (value: boolean) => { isDirty = value; };
-const noteA: Note = { id: 'a', title: 'Ghi chú A', content: 'Nội dung A', pinned: false, pinnedAt: null, labels: [], version: 1, createdAt: '2026-10-27T08:00:00Z', updatedAt: '2026-10-27T08:00:00Z' };
+const noteA: Note = { id: 'a', title: 'Ghi chú A', content: 'Nội dung A', pinned: false, pinnedAt: null, dueAt: null, completedAt: null, completed: false, important: false, daily: false, labels: [], version: 1, createdAt: '2026-10-27T08:00:00Z', updatedAt: '2026-10-27T08:00:00Z' };
 const noteB: Note = { ...noteA, id: 'b', title: 'Ghi chú B', content: 'Nội dung B' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const page = (notes: Note[], hasMore = false, offset = 0): NotesResponse => ({ notes, pagination: { limit: 50, offset, hasMore } });
@@ -34,11 +37,13 @@ const contentInput = () => screen.getByLabelText<HTMLTextAreaElement>('Nội dun
 
 beforeEach(() => {
   calls.length = 0; expired = 0; isDirty = false;
+  reminderNotes = [];
   window.confirm = () => true;
   respond = url => url.includes('?') ? json(page([])) : json({ note: noteA });
   respondLabels = () => json({ labels: [] });
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
+    if (url === '/api/notes/reminders') return json({ notes: reminderNotes });
     calls.push({ url, method: init?.method || 'GET', signal: init?.signal, body: init?.body as string | undefined,
       key: new Headers(init?.headers).get('Idempotency-Key') });
     return url.startsWith('/api/labels') ? respondLabels(url, init) : respond(url, init);
@@ -46,6 +51,62 @@ beforeEach(() => {
 });
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
+
+test('task urgency colors and completion update at deadlines and Vietnam day boundaries', () => {
+  const now = Date.parse('2026-10-30T12:00:00Z');
+  const overdue = { ...noteA, dueAt: '2026-10-30T11:59:00Z' };
+  assert.equal(taskState(overdue, now), 'overdue');
+  assert.equal(taskState({ ...overdue, completed: true }, now), 'done');
+  assert.equal(taskState({ ...noteA, dueAt: '2026-10-31T11:59:00Z' }, now), 'urgent');
+  assert.equal(taskState({ ...noteA, important: true }, now), 'urgent');
+  assert.equal(priority(overdue, now), 0);
+  const daily = { ...noteA, daily: true, completed: true, completedAt: '2026-10-30T16:59:00Z' };
+  assert.equal(taskState(daily, Date.parse('2026-10-30T16:59:30Z')), 'done');
+  assert.equal(taskState(daily, Date.parse('2026-10-30T17:00:00Z')), 'daily');
+});
+
+test('reminder controls are optional and send explicit date and completion changes', async () => {
+  const changes: unknown[] = [];
+  render(<NoteReminder note={noteA} busy={false} onChange={async value => { changes.push(value); return true; }} />);
+  const actor = user();
+  await actor.click(screen.getByLabelText('Quan trọng'));
+  await actor.click(screen.getByLabelText('Đã hoàn thành'));
+  fireEvent.change(screen.getByLabelText('Thời gian nhắc'), { target: { value: '2026-11-01T12:30' } });
+  await actor.click(screen.getByRole('button', { name: 'Đặt nhắc việc' }));
+  assert.deepEqual(changes, [{ important: true }, { completed: true }, { dueAt: new Date('2026-11-01T12:30').toISOString(), completed: false }]);
+});
+
+test('reminder changes flush text first and completing from a notification removes the alert', async () => {
+  let stored: Note = { ...noteA, dueAt: new Date(Date.now() - 60000).toISOString() };
+  reminderNotes = [stored];
+  respond = (url, init) => {
+    if (url.includes('?')) return json(page([stored]));
+    if (init?.method === 'PATCH') {
+      const body = JSON.parse(String(init.body));
+      if (url.endsWith('/reminder')) {
+        stored = { ...stored, ...body, version: stored.version + 1 };
+        if (body.completed) { stored.completedAt = new Date().toISOString(); reminderNotes = []; }
+      } else stored = { ...stored, title: body.title, content: body.content, version: stored.version + 1 };
+    }
+    return json({ note: stored });
+  };
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(contentInput().value, noteA.content));
+  await actor.type(contentInput(), ' mới');
+  await actor.click(screen.getByLabelText('Quan trọng'));
+  await waitFor(() => assert.equal(stored.important, true));
+  assert.equal(stored.content, `${noteA.content} mới`);
+  const writes = calls.filter(call => call.method === 'PATCH');
+  assert.equal(writes[0].url, '/api/notes/a');
+  assert.equal(writes[1].url, '/api/notes/a/reminder');
+  assert.ok(screen.getByRole('region', { name: 'Thông báo nhắc việc' }));
+  await actor.click(screen.getByRole('button', { name: 'Đánh dấu hoàn thành Ghi chú A' }));
+  await waitFor(() => assert.equal(screen.queryByRole('region', { name: 'Thông báo nhắc việc' }), null));
+  assert.equal(stored.completed, true);
+  assert.equal(contentInput().value, `${noteA.content} mới`);
+});
 
 test('an empty account shows the empty state and opens the shared editor', async () => {
   mount();

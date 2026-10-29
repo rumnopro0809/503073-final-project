@@ -73,6 +73,10 @@ export async function migrate(db: Database) {
       ON notes(owner_id, creation_key) WHERE creation_key IS NOT NULL`);
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned_at TIMESTAMPTZ');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS due_at TIMESTAMPTZ');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS daily BOOLEAN NOT NULL DEFAULT FALSE');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ');
     await sql.query('UPDATE notes SET pinned_at = updated_at WHERE pinned AND pinned_at IS NULL');
     await sql.query('CREATE UNIQUE INDEX IF NOT EXISTS notes_id_owner_idx ON notes(id, owner_id)');
     await sql.query(`CREATE INDEX IF NOT EXISTS notes_owner_pinned_updated_idx

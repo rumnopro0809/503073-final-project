@@ -11,6 +11,11 @@ export interface Note {
   version: number;
   pinned: boolean;
   pinnedAt: string | null;
+  dueAt: string | null;
+  completedAt: string | null;
+  important: boolean;
+  daily: boolean;
+  completed: boolean;
   labels: Label[];
   createdAt: string;
   updatedAt: string;

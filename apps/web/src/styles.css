@@ -1320,3 +1320,27 @@ form .primary-button {
   }
 
 }
+/* Task colors always carry a text status as well. */
+.note-card.task-urgent, .task-urgent { background: #fff5cf; border-color: #d7ad42; }
+.note-card.task-overdue, .task-overdue { background: #ffe6e6; border-color: #ce7777; }
+.note-card.task-daily { background: #eaf3ff; border-color: #8aaed1; }
+.note-card.task-done { background: #edf5ef; border-color: #9dbba4; }
+.task-badge { display: inline-block; margin: 0 8px 10px 0; font-size: 12px; font-weight: 600; color: #624c1d; }
+.task-overdue .task-badge { color: #9b3030; }
+.task-done .task-badge { color: #38664b; }
+.task-deadline { display: block; margin-bottom: 10px; font-size: 12px; color: #65576f; }
+.note-reminder { border: 1px solid #ddd4e6; border-radius: 10px; padding: 14px; margin: 16px 0; min-width: 0; }
+.note-reminder legend { color: #655178; font-size: 13px; padding: 0 6px; }
+.reminder-options, .reminder-time { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+.reminder-options label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+.reminder-options input { accent-color: #6551a4; width: 18px; height: 18px; }
+.reminder-time { margin-top: 14px; }
+.reminder-time label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+.reminder-time input { border: 1px solid #d7cce2; border-radius: 7px; padding: 10px; font: inherit; max-width: 100%; color: #393243; }
+.reminder-time input:focus-visible { outline: 2px solid #a18bc7; }
+.note-reminder > p, .reminder-notifications > p { font-size: 12px; line-height: 1.8; color: #73657d; }
+.reminder-notifications { padding: 18px; border: 1px solid #dfc77c; border-radius: 12px; background: #fffbef; margin: 0 0 24px; }
+.reminder-notifications h2 { font-size: 16px; margin: 0; }
+.reminder-notification { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #d7ad42; }
+.reminder-notification .quiet-button { white-space: normal; text-align: left; font-size: 12px; overflow-wrap: anywhere; }
+@media(max-width:720px) { .reminder-time { align-items: stretch; } .reminder-time label { width: 100%; } .reminder-time input { font-size: 16px; width: 100%; } }

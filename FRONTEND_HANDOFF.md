@@ -72,7 +72,7 @@ Chạy npm.cmd run test:web để kiểm thử giao diện DOM; npm.cmd test đ�
 
 ## Tìm kiếm và phân loại
 
-GET /api/notes nhận thêm q (tối đa 200 ký tự), pinned=true, labelId và sort=updated|created|title. Tìm kiếm cả tiêu đề và nội dung, không phân biệt hoa/thường; các ký tự %, _ và dấu gạch chéo được hiểu như văn bản. Ghim luôn đứng trước, theo pinnedAt mới nhất trước, rồi mới đến thứ tự chọn. Note trả thêm pinned, pinnedAt và labels.
+GET /api/notes nhận thêm q (tối đa 200 ký tự), pinned=true, labelId và sort=updated|created|title. Tìm kiếm cả tiêu đề và nội dung, không phân biệt hoa/thường; các ký tự %, _ và dấu gạch chéo được hiểu như văn bản. Theo yêu cầu bổ sung, việc quá hạn/sắp hạn/quan trọng được ưu tiên trước ghim; trong các ghi chú cùng mức ưu tiên, ghim theo pinnedAt mới nhất trước, rồi mới đến thứ tự chọn. Note trả thêm pinned, pinnedAt và labels.
 
 GET/POST /api/labels và PATCH/DELETE /api/labels/:id quản lý nhãn riêng từng tài khoản. Tên dài 1–40 ký tự, không trùng trong tài khoản (không phân biệt hoa/thường), có sáu màu định sẵn. Xóa nhãn không xóa ghi chú.
 
