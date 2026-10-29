@@ -11,6 +11,8 @@ import { NoteOrganization } from './NoteOrganization';
 import { NoteReminder, type ReminderChanges } from './NoteReminder';
 import { priority, taskState, taskLabel, formatDue, isCompleted } from '../reminders';
 import { useEntrance } from '../hooks/useEntrance';
+import { useCardLayout } from '../hooks/useCardLayout';
+import { ImportantBadge, LabelChip } from './LabelChip';
 
 interface Props {
   guest?: boolean;
@@ -92,7 +94,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const container = useRef<HTMLElement>(null);
   const visibleNotes = mergeNotes(filters, notes);
   const cardIds = visibleNotes.map(note => note.id).join('|');
-  useEntrance(container, '.note-card, .empty-notes', [loading, view, query, pinnedOnly, labelId, sort, cardIds]);
+  useEntrance(container, '.note-card, .empty-notes', [loading, query, pinnedOnly, labelId, sort, cardIds]);
+  const captureLayout = useCardLayout(container, view);
+  function changeView(next: 'grid' | 'list') { if (next !== view) { captureLayout(); setView(next); } }
   useEntrance(container, '.organization-feedback', [actionMessage]);
   useEntrance(container, '.reminder-notifications', [reminders.map(note => note.id).join('|')]);
   useEffect(() => {
@@ -382,8 +386,8 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       <div><h2>Những điều muốn nhớ</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
       <div className="notes-actions">
         <div className="note-view-switch" role="group" aria-label="Kiểu hiển thị ghi chú">
-          <button className="icon-button" type="button" aria-label="Xem dạng lưới" aria-pressed={view === 'grid'} onClick={() => setView('grid')}><Grid2X2 size={17} /></button>
-          <button className="icon-button" type="button" aria-label="Xem dạng danh sách" aria-pressed={view === 'list'} onClick={() => setView('list')}><List size={17} /></button>
+          <button className="icon-button" type="button" aria-label="Xem dạng lưới" aria-pressed={view === 'grid'} onClick={() => changeView('grid')}><Grid2X2 size={17} /></button>
+          <button className="icon-button" type="button" aria-label="Xem dạng danh sách" aria-pressed={view === 'list'} onClick={() => changeView('list')}><List size={17} /></button>
         </div>
         <button type="button" className="quiet-button" onClick={() => setReload(value => value + 1)} disabled={loading || navigationBusy}><RefreshCw size={16} /> Tải lại</button>
         <button ref={newButton} type="button" className="primary-button new-note-button" disabled={navigationBusy} onClick={() => void openNew()}><Plus size={17} /> Ghi chú mới</button>
@@ -446,13 +450,14 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         {filtered ? <><p>Thử từ khóa khác hoặc bỏ bớt bộ lọc.</p><button type="button" className="quiet-button" onClick={clearFilters}>Hiện tất cả ghi chú</button></>
           : <p>Bạn chưa có ghi chú nào.<br />Bắt đầu bằng nút Ghi chú mới ở phía trên.</p>}</div>
       : <div className={`notes-grid ${view === 'list' ? 'view-list' : ''}`} aria-label="Danh sách ghi chú">
-        {visibleNotes.map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
+        {visibleNotes.map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${note.important ? 'note-important' : ''} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
           onClick={() => void openNote(note)} aria-pressed={editor?.note?.id === note.id} aria-label={`Mở ghi chú ${note.title}`}>
           <span className="note-card-corner">{note.pinned ? <span className="note-pinned-badge"><Pin size={14} />Đã ghim</span> : <StickyNote size={16} />}</span>
+          {note.important && <ImportantBadge />}
           <h3>{note.title}</h3><p>{note.content}</p>
-          {taskLabel(note) && <span className="task-badge">{taskLabel(note)}</span>}
+          {taskLabel(note) && taskLabel(note) !== 'Quan trọng' && <span className="task-badge">{taskLabel(note)}</span>}
           {note.dueAt && <span className="task-deadline">Hạn: {formatDue(note.dueAt)}</span>}
-          {(note.labels ?? []).length > 0 && <span className="note-labels">{note.labels.map(label => <span className="label-chip" key={label.id}><i style={{ backgroundColor: label.color }} />{label.name}</span>)}</span>}
+          {(note.labels ?? []).length > 0 && <span className="note-labels">{note.labels.map(label => <LabelChip key={label.id} label={label} />)}</span>}
           <time dateTime={note.updatedAt}>Sửa {new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(note.updatedAt))}</time>
         </button>)}
       </div>}

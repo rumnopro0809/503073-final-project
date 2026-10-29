@@ -1380,3 +1380,61 @@ form .primary-button {
   .quick-note { margin-bottom: 18px; }
   .notes-grid { gap: 12px; }
 }
+/* Clearer hierarchy, colored labels and an amber identity for importance. */
+.workspace { background: #f5f6fa; }
+.workspace-header { background: #ffffffec; border-bottom-color: #e4e5ed; box-shadow: 0 3px 18px #29263705; }
+.workspace-intro { padding: 6px 0 26px; }
+.workspace-intro h1 { font-size: 28px; letter-spacing: -1px; color: #302a42; }
+.workspace-intro p { color: #716c7d; }
+.workspace-header .brand-mark { box-shadow: 0 5px 12px #6551a42b; }
+.notes-toolbar h2 { font-size: 16px; letter-spacing: -.3px; }
+.notes-toolbar p { font-size: 12px; color: #827b8f; }
+.notes-actions .new-note-button { box-shadow: 0 5px 15px #6551a42b; border-radius: 11px; }
+.quick-note { padding: 20px 22px; max-width: 660px; border-radius: 15px; border-color: #ded9e9; box-shadow: 0 5px 22px #3026450c; font-weight: 500; }
+.quick-note > svg { color: #7353ab; background: #eee7fa; box-sizing: content-box; padding: 8px; border-radius: 10px; }
+.quick-note:hover { background: #fdfbff; border-color: #ab97ca; }
+.quick-note span { border-radius: 20px; padding: 5px 9px; background: #edf5f0; color: #427058; }
+.notes-search-row { gap: 12px; }
+.notes-search { border-radius: 12px; box-shadow: 0 2px 10px #31243b04; background: #fff; }
+.notes-filter-row { padding: 12px 14px; background: #ffffffb5; border: 1px solid #e6e3ed; border-radius: 13px; }
+.note-view-switch { border-radius: 11px; padding: 3px; background: #eae7f1; gap: 3px; }
+.note-view-switch .icon-button { border: 0; border-radius: 8px; }
+.note-view-switch .icon-button[aria-pressed=true] { background: #fff; box-shadow: 0 2px 6px #38244e15; color: #684c9b; }
+.notes-grid { gap: 18px; }
+.note-card { background: #fff; border-color: #e1deea; border-radius: 15px; padding: 22px; box-shadow: 0 3px 12px #392a4b06; }
+.note-card:nth-child(3n+2) { background: #f7f3fc; }
+.note-card:nth-child(3n) { background: #f0f6f3; }
+.note-card h3 { font-size: 16px; line-height: 1.6; color: #322a42; }
+.note-card p { color: #70667d; line-height: 1.8; }
+.note-card:hover { border-color: #ab97ca; box-shadow: 0 10px 26px #57416e17; }
+.note-card.selected { border-color: #8160b0; box-shadow: 0 0 0 2px #8160b022, 0 8px 24px #57416e0e; }
+.note-card.task-urgent { background: #fff6dc; border-color: #e5c06a; }
+.note-card.task-overdue { background: #fff0f0; border-color: #dc9696; }
+.note-card.task-daily { background: #eef5ff; border-color: #adc5e4; }
+.note-card.task-done { background: #eff8f1; border-color: #b1d3bb; }
+.note-card.note-important { border-top: 4px solid #d89413; }
+.important-badge { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 5px 10px; border: 1px solid #e6b14c; border-radius: 7px; background: #ffe9b0; color: #7a4900; font-size: 11px; font-weight: 700; line-height: 1.5; }
+.note-card > .important-badge { margin: -2px 0 12px; }
+.reminder-options .important-toggle { padding: 8px 11px; border: 1px solid #e5d6b6; border-radius: 9px; color: #8d621b; background: #fffaf0; }
+.reminder-options .important-toggle.active { border-color: #dca338; background: #ffe9b0; color: #7a4900; }
+.important-toggle input { accent-color: #b77908; }
+.colored-label { color: var(--label-color); border-color: color-mix(in srgb, var(--label-color) 35%, white); background: color-mix(in srgb, var(--label-color) 13%, white); font-weight: 600; padding: 5px 9px; }
+.label-important { color: #7a4900; background: #ffe9b0; border-color: #e6b14c; }
+.note-editor { padding: 25px; border-radius: 18px; border: 1px solid #dcd3e9; box-shadow: 0 14px 45px #49305b14; }
+.note-editor-header { border-bottom: 1px solid #ede8f3; padding-bottom: 16px; margin-bottom: 18px; }
+.note-editor-heading { color: #634594; }
+.note-editor-heading h2 { font-size: 16px; }
+.note-editor-fields input { font-size: 18px; border-color: #e7e0ee; background: #fdfcff; }
+.note-editor-fields textarea { background: #fdfcff; border-color: #e7e0ee; font-size: 15px; }
+.note-reminder { background: #faf8fd; border-radius: 12px; }
+.organization-feedback { background: #eaf4ed; border: 1px solid #c5dfcd; border-radius: 10px; padding: 12px 16px; color: #38644a; }
+.label-manager { border-radius: 16px; background: #fff; box-shadow: 0 7px 25px #49305b09; }
+.empty-notes { background: #ffffffa6; border-color: #ded9e7; }
+@media(max-width:720px) {
+  .workspace-intro h1 { font-size: 23px; }
+  .quick-note { padding: 16px; gap: 10px; }
+  .notes-filter-row { padding: 10px; }
+  .note-editor { padding: 18px; border-radius: 14px; }
+  .note-editor-fields input, .note-editor-fields textarea { font-size: 16px; }
+  .note-card { padding: 18px; }
+}

@@ -1,5 +1,6 @@
 import { Pin, PinOff, Tag } from 'lucide-react';
 import type { Label, Note } from '../types/notes';
+import { ImportantBadge, LabelChip } from './LabelChip';
 
 export function NoteOrganization({ note, labels, disabled, onPin, onLabel, onManageLabels }: {
   note: Note | null; labels: Label[]; disabled: boolean;
@@ -8,6 +9,7 @@ export function NoteOrganization({ note, labels, disabled, onPin, onLabel, onMan
   if (!note) return <p className="organization-hint">Sau lần tự lưu đầu tiên, bạn có thể ghim và gắn nhãn cho ghi chú.</p>;
   const assigned = new Set((note.labels ?? []).map(label => label.id));
   return <div className="note-organization">
+    {note.important && <ImportantBadge />}
     <button type="button" className={`quiet-button note-pin ${note.pinned ? 'is-pinned' : ''}`} disabled={disabled}
       aria-pressed={note.pinned} onClick={() => onPin(!note.pinned)}>{note.pinned ? <PinOff size={16} /> : <Pin size={16} />}{note.pinned ? 'Bỏ ghim ghi chú' : 'Ghim ghi chú'}</button>
     <details className="note-label-picker"><summary><Tag size={16} />Nhãn cho ghi chú <span>{assigned.size}</span></summary>
@@ -18,6 +20,6 @@ export function NoteOrganization({ note, labels, disabled, onPin, onLabel, onMan
       </fieldset>
       <button type="button" className="quiet-button" disabled={disabled} onClick={onManageLabels}>Quản lý nhãn</button>
     </details>
-    {(note.labels ?? []).length > 0 && <div className="note-labels" aria-label="Nhãn đã gắn">{note.labels.map(label => <span className="label-chip" key={label.id}><i style={{ backgroundColor: label.color }} />{label.name}</span>)}</div>}
+    {(note.labels ?? []).length > 0 && <div className="note-labels" aria-label="Nhãn đã gắn">{note.labels.map(label => <LabelChip key={label.id} label={label} />)}</div>}
   </div>;
 }

@@ -27,7 +27,7 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
   const container = useRef<HTMLElement>(null);
-  useEntrance(container);
+  useEntrance(container, null, [], true);
   useEffect(() => { titleInput.current?.focus(); }, []);
   return <section ref={container} className="note-editor" aria-labelledby={`${id}-heading`}>
     <header className="note-editor-header">

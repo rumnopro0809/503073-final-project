@@ -72,6 +72,8 @@ Chạy npm.cmd run test:web để kiểm thử giao diện DOM; npm.cmd test đ�
 
 ## Tìm kiếm và phân loại
 
+useCardLayout.ts chụp Flip.getState ngay trước setView, rồi Flip.from sau khi React đổi bố cục. Capture hoàn tất tween cũ trước khi đo, giới hạn 18 thẻ trong viewport, dọn animation qua useGSAP/matchMedia. Thay đổi view không chạy lại entrance của danh sách để tránh hai hiệu ứng cùng ghi transform. Editor dùng timeline trượt/scale và stagger các phần, không phụ thuộc draft/version.
+
 useEntrance.ts dùng GSAP + useGSAP, scope theo ref và revertOnUpdate để dọn tween khi đổi nội dung/unmount. matchMedia chỉ chạy khi prefers-reduced-motion: no-preference. Animation chỉ thay transform/opacity, hoàn tất thì xóa inline style; danh sách giới hạn 18 phần tử trong viewport. Dependency của editor không gồm draft hoặc version nên gõ/tự lưu không khởi động lại hiệu ứng. Không có callback animation điều khiển thao tác lưu hay mạng.
 
 Chế độ khách dùng localNotes.ts với khóa localStorage ghichu.guest.v1, cùng hợp đồng request qua createNoteServices. useNoteAutosave nhận transport theo nơi lưu; dữ liệu khách không đi qua API. Web Locks tuần tự hóa ghi giữa các tab nếu trình duyệt hỗ trợ; version vẫn dùng để đối chiếu. Mỗi thay đổi ghi chú/nhãn lưu trong một lần setItem; lỗi quota giữ bản nháp. Server tiếp tục kiểm tra session/chủ sở hữu như trước.

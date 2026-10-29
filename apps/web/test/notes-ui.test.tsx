@@ -95,6 +95,20 @@ test('reduced motion leaves the editor visible and focusable with no GSAP tween'
   } finally { window.matchMedia = original; }
 });
 
+test('important badge stays distinct when a note is overdue or completed', async () => {
+  let note = { ...noteA, important: true, dueAt: new Date(Date.now() - 60000).toISOString() };
+  respond = url => url.includes('?') ? json(page([note])) : json({ note });
+  mount();
+  const card = await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  assert.ok(within(card).getByText('Quan trọng').classList.contains('important-badge'));
+  assert.ok(within(card).getByText('Quá hạn'));
+  note = { ...note, completed: true, completedAt: new Date().toISOString() };
+  await user().click(screen.getByRole('button', { name: 'Tải lại' }));
+  const completed = await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  assert.ok(within(completed).getByText('Quan trọng'));
+  assert.ok(within(completed).getByText('Đã hoàn thành'));
+});
+
 test('guest storage survives reopening, searches and keeps labels and reminders locally', async () => {
   const request = createLocalApi(window.localStorage);
   const services = createNoteServices(request);

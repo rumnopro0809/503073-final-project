@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Note } from '../types/notes';
 import { isCompleted } from '../reminders';
+import { Star } from 'lucide-react';
 export type ReminderChanges = { dueAt?: string | null; important?: boolean; daily?: boolean; completed?: boolean };
 const localValue = (value: string | null) => {
   if (!value) return '';
@@ -13,7 +14,7 @@ export function NoteReminder({ note, busy, onChange }: { note: Note; busy: boole
   return <fieldset className="note-reminder" disabled={busy}><legend>Nhắc việc · tùy chọn</legend>
     <div className="reminder-options">
       <label><input type="checkbox" checked={isCompleted(note)} onChange={event => void onChange({ completed: event.target.checked })} />{note.daily ? 'Đã xong hôm nay' : 'Đã hoàn thành'}</label>
-      <label><input type="checkbox" checked={note.important} onChange={event => void onChange({ important: event.target.checked })} />Quan trọng</label>
+      <label className={`important-toggle ${note.important ? 'active' : ''}`}><input type="checkbox" checked={note.important} onChange={event => void onChange({ important: event.target.checked })} /><Star size={14} fill={note.important ? 'currentColor' : 'none'} aria-hidden="true" />Quan trọng</label>
       <label><input type="checkbox" checked={note.daily} onChange={event => void onChange({ daily: event.target.checked, dueAt: null, completed: false })} />Việc hằng ngày</label>
     </div>
     {!note.daily && <div className="reminder-time"><label>Thời gian nhắc<input type="datetime-local" value={time} onChange={event => { setTime(event.target.value); setError(''); }} /></label>

@@ -2,6 +2,7 @@ import { useId, useRef, useState, type FormEvent } from 'react';
 import { Check, Pencil, Plus, Tag, Trash2, X } from 'lucide-react';
 import type { Label } from '../types/notes';
 import { useEntrance } from '../hooks/useEntrance';
+import { LabelChip } from './LabelChip';
 
 const COLORS = [
   ['#8b6bb1', 'Tím'], ['#3c8270', 'Xanh lá'], ['#b47c35', 'Vàng'],
@@ -48,7 +49,7 @@ export function LabelManager({ labels, busy, onAction, onClose }: {
       {error && <p className="field-error" id={`${id}-error`} role="alert">{error}</p>}
     </form>
     {labels.length === 0 ? <p className="labels-empty">Chưa có nhãn. Tạo nhãn đầu tiên ở trên rồi gắn vào ghi chú.</p>
-      : <ul className="label-manager-list">{labels.map(label => <li key={label.id}><span className="label-chip"><i style={{ backgroundColor: label.color }} />{label.name}</span>
+      : <ul className="label-manager-list">{labels.map(label => <li key={label.id}><LabelChip label={label} />
         <div><button type="button" className="icon-button" disabled={busy} aria-label={`Chỉnh sửa nhãn ${label.name}`} onClick={() => {
           setEditingId(label.id); setName(label.name); setColor(label.color); setError(''); input.current?.focus();
         }}><Pencil size={15} /></button>
