@@ -1344,3 +1344,38 @@ form .primary-button {
 .reminder-notification { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #d7ad42; }
 .reminder-notification .quiet-button { white-space: normal; text-align: left; font-size: 12px; overflow-wrap: anywhere; }
 @media(max-width:720px) { .reminder-time { align-items: stretch; } .reminder-time label { width: 100%; } .reminder-time input { font-size: 16px; width: 100%; } }
+/* Compact workspace, with writing and search as the primary actions. */
+.workspace-header { position: sticky; top: 0; z-index: 5; background: #faf9f6f5; backdrop-filter: blur(12px); padding: 14px clamp(18px,4vw,64px); }
+.workspace-main { max-width: 1400px; padding: 24px 32px 50px; }
+.workspace-intro { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 0 0 20px; }
+.workspace-intro h1 { font-family: 'Be Vietnam Pro', sans-serif; font-size: 22px; font-weight: 600; letter-spacing: -.5px; margin: 0; }
+.workspace-intro p { flex: 1; min-width: 240px; margin: 0; font-size: 12px; }
+.workspace-intro > .quiet-button { font-size: 12px; }
+.storage-badge { border-radius: 20px; background: #eee7f6; padding: 7px 12px; font-size: 12px; color: #655178; }
+.guest-entry { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 14px; margin: 15px 0; border: 1px solid #e1d8eb; border-radius: 9px; color: #655178; font-size: 13px; }
+.guest-entry small { flex-basis: 100%; text-align: center; color: #84758e; font-size: 11px; }
+.quick-note { display: flex; align-items: center; gap: 14px; width: min(100%,640px); margin: 4px auto 24px; padding: 17px 20px; border: 1px solid #dcd5e3; border-radius: 9px; background: #fff; color: #796b84; box-shadow: 0 3px 10px #38244e0b; text-align: left; }
+.quick-note span { margin-left: auto; font-size: 11px; color: #8c8095; }
+.notes-toolbar { margin-bottom: 18px; }
+.notes-toolbar h2 { font-size: 15px; }
+.notes-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,230px),1fr)); gap: 14px; align-items: start; }
+.note-card { min-height: 190px; border-radius: 9px; padding: 18px; box-shadow: none; }
+.note-card:hover { transform: none; box-shadow: 0 3px 12px #59406914; }
+.note-editor { max-width: 780px; margin: 0 auto 24px; background: #fff; box-shadow: 0 5px 24px #49305b0e; }
+.note-editor-fields textarea { min-height: 160px; }
+.note-editor-fields input { font-weight: 600; }
+.note-editor .note-organization { margin-top: 20px; border-top: 1px solid #eee8f1; padding-top: 14px; }
+.verification-banner { margin-bottom: 22px; }
+@media(max-width:720px) {
+  .workspace-main { padding: 18px 14px 30px; }
+  .workspace-header { padding: 12px 14px; gap: 10px; }
+  .workspace-header .brand { font-size: 20px; }
+  .account-bar { flex-wrap: wrap; justify-content: flex-end; }
+  .account-bar .storage-badge { display: none; }
+  .guest-workspace .account-bar { gap: 5px; }
+  .guest-workspace .account-bar button { font-size: 11px; padding: 9px; }
+  .workspace-intro h1 { font-size: 20px; }
+  .workspace-intro p { min-width: 0; flex-basis: 100%; }
+  .quick-note { margin-bottom: 18px; }
+  .notes-grid { gap: 12px; }
+}

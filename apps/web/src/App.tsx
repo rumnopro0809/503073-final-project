@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, LogOut, Mail, ShieldCheck, Sparkles, StickyNote, UserRound } from 'lucide-react';
 import { api, ApiError, type User } from './api';
 import { NotesWorkspace } from './components/NotesWorkspace';
@@ -112,6 +112,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
           </button>
         </form>
         {!reauthEmail && <p className="account-prompt">{register ? 'Đã có một góc riêng?' : 'Bạn chưa có tài khoản?'} <Link to={register ? '/login' : '/register'}>{register ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={13} /></Link></p>}
+        {!reauthEmail && <Link className="guest-entry" to="/guest">Dùng không cần tài khoản <ArrowRight size={16} /><small>Ghi chú chỉ lưu trong trình duyệt này</small></Link>}
         <div className="form-assurance"><ShieldCheck size={15} /><span>Không gian của bạn, chỉ bạn mới có thể truy cập.</span></div>
       </div>
       <footer className="auth-bottom"><span>© {new Date().getFullYear()} ghi chú.</span><span>Viết xuống. Nhẹ đầu hơn.</span></footer>
@@ -129,6 +130,7 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => { document.title = 'Ghi chú của bạn — Ghi chú'; }, []);
   async function logout() {
@@ -153,7 +155,7 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
       {new URLSearchParams(location.search).get('verification') === 'invalid' && <div className="notice error" role="alert">Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nếu tài khoản chưa được xác minh, bạn có thể yêu cầu gửi lại email.</div>}
       {error && <div className="notice error" role="alert">{error}</div>}
       {message && <div className="notice success" role="status">{message}</div>}
-      <div className="workspace-intro"><span className="eyebrow">KHÔNG GIAN CỦA BẠN</span><h1>Ghi chú của bạn<span>.</span></h1><p>Chào {user.displayName}, hôm nay bạn muốn ghi nhớ điều gì?</p></div>
+      <div className="workspace-intro"><h1>Ghi chú của bạn<span>.</span></h1><p>Lưu trên máy chủ · Mở lại bằng tài khoản này trên thiết bị khác.</p><button type="button" className="quiet-button" onClick={async () => { if (!beforeLeaveRef.current || await beforeLeaveRef.current()) navigate('/guest'); }}>Mở ghi chú trên máy</button></div>
       <NotesWorkspace onSessionExpired={onSessionExpired} onDirtyChange={setDraftDirty}
         authenticationRevision={authenticationRevision} beforeLeaveRef={beforeLeaveRef} />
     </main>
@@ -161,7 +163,24 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
   </div>;
 }
 
+const noSession = () => {};
+function GuestHome({ signedIn = false }: { signedIn?: boolean }) {
+  const beforeLeaveRef = useRef<(() => Promise<boolean>) | null>(null);
+  const navigate = useNavigate();
+  const leave = async (path: string) => { if (!beforeLeaveRef.current || await beforeLeaveRef.current()) navigate(path); };
+  useEffect(() => { document.title = 'Ghi chú trên máy — Ghi chú'; }, []);
+  return <div className="workspace guest-workspace">
+    <header className="workspace-header"><Brand /><div className="account-bar"><span className="storage-badge">Trên máy này</span>
+      <button className="quiet-button" onClick={() => void leave(signedIn ? '/' : '/login')}>{signedIn ? 'Ghi chú tài khoản' : 'Đăng nhập'}</button>
+      {!signedIn && <button className="primary-button new-note-button" onClick={() => void leave('/register')}>Tạo tài khoản</button>}</div></header>
+    <main className="workspace-main"><div className="workspace-intro"><h1>Ghi chú trên máy<span>.</span></h1><p>Không cần tài khoản. Tự lưu trong trình duyệt này; xóa dữ liệu trình duyệt sẽ xóa ghi chú. Ghi chú trên máy và tài khoản được giữ riêng.</p></div>
+      <NotesWorkspace guest onSessionExpired={noSession} onDirtyChange={noSession} beforeLeaveRef={beforeLeaveRef} />
+    </main><footer className="workspace-footer">Đăng nhập để lưu ghi chú mới trên máy chủ và dùng trên nhiều thiết bị.</footer>
+  </div>;
+}
+
 export function App() {
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState('');
@@ -189,7 +208,8 @@ export function App() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [user?.id]);
-  if (loading || connectionError) return <main className="loading-screen"><Brand />{loading ? <><LoaderCircle className="spin" /><p>Đang mở không gian của bạn…</p></> : <><p role="alert">{connectionError}</p><button className="primary-button" onClick={() => { setLoading(true); setConnectionError(''); void refresh(true); }}>Thử kết nối lại <ArrowRight size={16} /></button></>}</main>;
+  if (location.pathname === '/guest') return <GuestHome signedIn={Boolean(user)} />;
+  if (loading || connectionError) return <main className="loading-screen"><Brand />{loading ? <><LoaderCircle className="spin" /><p>Đang mở không gian của bạn…</p></> : <><p role="alert">{connectionError}</p><button className="primary-button" onClick={() => { setLoading(true); setConnectionError(''); void refresh(true); }}>Thử kết nối lại <ArrowRight size={16} /></button></>}<Link className="guest-entry" to="/guest">Dùng ghi chú trên máy</Link></main>;
   const onAuthenticated = (next: User, delivery?: string) => {
     setUser(next); setEmailFailed(delivery === 'failed'); setSessionExpired(false); setAuthenticationRevision(value => value + 1);
   };
@@ -197,7 +217,7 @@ export function App() {
     <Route path="/login" element={user ? <Navigate to={`/${window.location.search}`} replace /> : <AuthPage key="login" mode="login" onAuthenticated={onAuthenticated} />} />
     <Route path="/register" element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={onAuthenticated} />} />
     <Route path="/" element={user ? <Home key={user.id} user={user} emailFailed={emailFailed} onLogout={clearSession}
-      onSessionExpired={requireAuthentication} authenticationRevision={authenticationRevision} /> : <Navigate to={`/login${window.location.search}`} replace />} />
+      onSessionExpired={requireAuthentication} authenticationRevision={authenticationRevision} /> : <GuestHome />} />
     <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
   </Routes></div>{sessionExpired && user && <AuthPage key="reauthenticate" mode="login" reauthEmail={user.email} onAuthenticated={onAuthenticated} />}</>;
 }

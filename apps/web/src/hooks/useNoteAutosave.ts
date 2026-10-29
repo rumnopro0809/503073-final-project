@@ -3,13 +3,13 @@ import { NoteAutosaver, type AutosaveState } from '../autosave/NoteAutosaver';
 import { notesApi } from '../notesApi';
 import type { Note, NoteDraft } from '../types/notes';
 
-export function useNoteAutosave(options: { onSaved: (note: Note) => void; onAuthenticationRequired: () => void; authenticationRevision: number }) {
+export function useNoteAutosave(options: { onSaved: (note: Note) => void; onAuthenticationRequired: () => void; authenticationRevision: number; transport?: typeof notesApi }) {
   const engine = useRef<NoteAutosaver | null>(null);
   const callbacks = useRef(options); callbacks.current = options;
   const [state, setState] = useState<AutosaveState | null>(null);
   const open = useCallback((note: Note | null) => {
     engine.current?.dispose();
-    const session = new NoteAutosaver({ note, transport: notesApi, onChange: setState,
+    const session = new NoteAutosaver({ note, transport: callbacks.current.transport ?? notesApi, onChange: setState,
       onSaved: note => callbacks.current.onSaved(note), onAuthenticationRequired: () => callbacks.current.onAuthenticationRequired() });
     engine.current = session; setState(session.state);
   }, []);

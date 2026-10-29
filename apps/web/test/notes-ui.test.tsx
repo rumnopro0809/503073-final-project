@@ -15,6 +15,8 @@ const { NotesWorkspace } = await import('../src/components/NotesWorkspace');
 const { NoteEditor } = await import('../src/components/NoteEditor');
 const { NoteReminder } = await import('../src/components/NoteReminder');
 const { taskState, priority } = await import('../src/reminders');
+const { createLocalApi, GUEST_KEY } = await import('../src/localNotes');
+const { createNoteServices } = await import('../src/notesApi');
 const { App } = await import('../src/App');
 const { MemoryRouter } = await import('react-router-dom');
 const originalFetch = globalThis.fetch;
@@ -38,6 +40,7 @@ const contentInput = () => screen.getByLabelText<HTMLTextAreaElement>('Nội dun
 beforeEach(() => {
   calls.length = 0; expired = 0; isDirty = false;
   reminderNotes = [];
+  window.localStorage.clear();
   window.confirm = () => true;
   respond = url => url.includes('?') ? json(page([])) : json({ note: noteA });
   respondLabels = () => json({ labels: [] });
@@ -51,6 +54,54 @@ beforeEach(() => {
 });
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
+
+test('guest storage survives reopening, searches and keeps labels and reminders locally', async () => {
+  const request = createLocalApi(window.localStorage);
+  const services = createNoteServices(request);
+  let note = await services.notesApi.create({ title: 'Trên máy', content: 'Nội dung riêng' }, crypto.randomUUID());
+  const label = await services.labelsApi.create({ name: 'Cá nhân', color: '#8b6bb1' });
+  note = await services.notesApi.organize(note, { pinned: true, labelIds: [label.id] });
+  note = await services.notesApi.reminder(note, { dueAt: new Date(Date.now() - 1000).toISOString() });
+  const reopened = createNoteServices(createLocalApi(window.localStorage));
+  assert.equal((await reopened.notesApi.read(note.id)).labels[0].name, 'Cá nhân');
+  assert.equal((await request<NotesResponse>('/notes?q=riêng')).notes.length, 1);
+  assert.equal((await request<{notes: Note[]}>('/notes/reminders')).notes[0].id, note.id);
+  await services.labelsApi.remove(label.id);
+  const retained = await reopened.notesApi.read(note.id);
+  assert.equal(retained.content, 'Nội dung riêng'); assert.deepEqual(retained.labels, []);
+  assert.equal(calls.length, 0);
+});
+
+test('guest writes are versioned and creation retries do not duplicate notes', async () => {
+  const services = createNoteServices(createLocalApi(window.localStorage));
+  const key = crypto.randomUUID(), draft = { title: 'Idempotent', content: 'Local' };
+  const note = await services.notesApi.create(draft,key);
+  assert.equal((await services.notesApi.create(draft,key)).id, note.id);
+  await services.notesApi.update(note, { ...draft, content: 'Updated' });
+  await assert.rejects(services.notesApi.update(note, { ...draft, content: 'Stale' }), (error: unknown) => (error as {status:number}).status === 409);
+  assert.equal((await services.notesApi.read(note.id)).content, 'Updated');
+});
+
+test('blocked or corrupt guest storage reports errors without erasing saved data', async () => {
+  window.localStorage.setItem(GUEST_KEY,'invalid');
+  await assert.rejects(createLocalApi(window.localStorage)('/notes'), /Không đọc được/);
+  assert.equal(window.localStorage.getItem(GUEST_KEY),'invalid');
+  const blocked = createNoteServices(createLocalApi({ getItem: () => null, setItem: () => { throw new Error('quota'); } }));
+  await assert.rejects(blocked.notesApi.create({ title: 'Draft', content: 'Still here' }, crypto.randomUUID()), /bộ nhớ đầy/);
+});
+
+test('guest workspace autosaves without sending note requests to the server', async () => {
+  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty} />);
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Ghi chú mới' }));
+  await actor.type(titleInput(), 'Ghi chú khách'); await actor.type(contentInput(), 'Không gửi server');
+  await screen.findByText('Đã lưu', {}, { timeout: 2500 });
+  assert.equal(calls.length, 0);
+  cleanup();
+  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty} />);
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú khách' }));
+  await waitFor(() => assert.equal(contentInput().value, 'Không gửi server'));
+});
 
 test('task urgency colors and completion update at deadlines and Vietnam day boundaries', () => {
   const now = Date.parse('2026-10-30T12:00:00Z');

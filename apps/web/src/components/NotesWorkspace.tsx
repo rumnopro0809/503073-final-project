@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X } from 'lucide-react';
-import { api, ApiError } from '../api';
+import { api as serverApi, ApiError } from '../api';
 import type { Label, Note, NoteDraft, NoteSort, NotesResponse } from '../types/notes';
 import { NoteEditor } from './NoteEditor';
 import { useNoteAutosave } from '../hooks/useNoteAutosave';
-import { labelsApi, notesApi } from '../notesApi';
+import { createNoteServices } from '../notesApi';
+import { localApi, GUEST_KEY } from '../localNotes';
 import { LabelManager, type LabelAction } from './LabelManager';
 import { NoteOrganization } from './NoteOrganization';
 import { NoteReminder, type ReminderChanges } from './NoteReminder';
 import { priority, taskState, taskLabel, formatDue, isCompleted } from '../reminders';
 
 interface Props {
+  guest?: boolean;
   onSessionExpired: () => void; onDirtyChange: (dirty: boolean) => void;
   authenticationRevision?: number; beforeLeaveRef?: MutableRefObject<(() => Promise<boolean>) | null>;
 }
@@ -55,7 +57,9 @@ function listUrl(filters: Filters, offset: number) {
   return `/notes?${params}`;
 }
 
-export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef }: Props) {
+export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, guest = false }: Props) {
+  const api = guest ? localApi : serverApi;
+  const { notesApi, labelsApi } = useMemo(() => createNoteServices(api), [api]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [reminders, setReminders] = useState<Note[]>([]);
   const [reminderError, setReminderError] = useState('');
@@ -103,7 +107,13 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     setNotes(current => mergeNotes(filtersRef.current, current, [note]));
     setReminders(current => [...current.filter(item => item.id !== note.id), note].filter(item => !isCompleted(item) && item.dueAt && Date.parse(item.dueAt) <= Date.now() + 86400000));
   }, []);
-  const autosave = useNoteAutosave({ onSaved, onAuthenticationRequired: onSessionExpired, authenticationRevision });
+  const autosave = useNoteAutosave({ onSaved, onAuthenticationRequired: onSessionExpired, authenticationRevision, transport: notesApi });
+  useEffect(() => {
+    if (!guest) return;
+    const refresh = (event: StorageEvent) => { if (event.key === GUEST_KEY || event.key === null) { setReload(value => value + 1); setLabelsReload(value => value + 1); } };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [guest]);
   const editor = autosave.state;
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [editorError, setEditorError] = useState('');
@@ -372,6 +382,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         <button ref={newButton} type="button" className="primary-button new-note-button" disabled={navigationBusy} onClick={() => void openNew()}><Plus size={17} /> Ghi chú mới</button>
       </div>
     </div>
+    {!editor && <button type="button" className="quick-note" onClick={() => void openNew()} disabled={navigationBusy}><Plus size={20} />Ghi lại điều gì đó…<span>Tự lưu</span></button>}
     <div className="notes-search-row">
       <div className="notes-search"><Search size={19} aria-hidden="true" /><label className="sr-only" htmlFor="notes-search">Tìm ghi chú</label>
         <input ref={searchInput} type="search" id="notes-search" value={search} maxLength={200} autoComplete="off"

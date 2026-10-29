@@ -31,7 +31,6 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
       <div className="note-editor-heading"><StickyNote size={18} /><h2 id={`${id}-heading`}>{isNew ? 'Ghi chú mới' : 'Chỉnh sửa ghi chú'}</h2></div>
       <button type="button" className="icon-button" onClick={onClose} disabled={disabled} aria-label="Đóng trình soạn ghi chú"><X size={19} /></button>
     </header>
-    {organization}
     <div className="note-editor-fields">
       <label htmlFor={`${id}-title`}>Tiêu đề</label>
       <input ref={titleInput} id={`${id}-title`} name="title" value={draft.title} maxLength={200} required disabled={disabled}
@@ -46,6 +45,7 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
         onChange={event => onChange({ ...draft, content: event.target.value })} />
       {fieldErrors?.content && <p id={`${id}-content-error`} className="field-error">{fieldErrors.content}</p>}
     </div>
+    {organization}
     <footer className="note-editor-footer">
       <span className={`note-save-status ${saveStatus}`} role="status" aria-live="polite">
         {saveStatus === 'saving' ? <LoaderCircle size={15} className="spin" />
