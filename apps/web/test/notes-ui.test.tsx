@@ -55,6 +55,46 @@ beforeEach(() => {
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
 
+test('GSAP entrance preserves editor focus, does not replay while typing and cleans up on unmount', async () => {
+  const { gsap } = await import('gsap');
+  const originalMedia = window.matchMedia;
+  const originalStyle = globalThis.getComputedStyle;
+  window.matchMedia = ((media: string) => ({ media, matches: true,
+    addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {},
+  })) as unknown as typeof window.matchMedia;
+  globalThis.getComputedStyle = window.getComputedStyle.bind(window);
+  try {
+    const props = { isNew: true, onChange: () => {}, onClose: () => {}, saveStatus: 'unsaved' as const };
+    const view = render(<NoteEditor {...props} draft={{ title: 'A', content: 'B' }} />);
+    const panel = screen.getByRole('region', { name: 'Ghi chú mới' });
+    const tween = gsap.getTweensOf(panel)[0];
+    assert.ok(tween);
+    assert.equal(document.activeElement, titleInput());
+    view.rerender(<NoteEditor {...props} draft={{ title: 'Typing', content: 'Continues' }} />);
+    assert.equal(gsap.getTweensOf(panel)[0], tween);
+    assert.equal(titleInput().value, 'Typing');
+    view.unmount();
+    assert.equal(gsap.getTweensOf(panel).length, 0);
+    assert.equal(panel.style.transform, '');
+    assert.equal(panel.style.opacity, '');
+  } finally { window.matchMedia = originalMedia; globalThis.getComputedStyle = originalStyle; }
+});
+
+test('reduced motion leaves the editor visible and focusable with no GSAP tween', async () => {
+  const { gsap } = await import('gsap');
+  const original = window.matchMedia;
+  window.matchMedia = ((media: string) => ({ media, matches: false, addListener() {}, removeListener() {} })) as unknown as typeof window.matchMedia;
+  try {
+    const view = render(<NoteEditor isNew draft={{ title: '', content: '' }} onChange={() => {}} onClose={() => {}} saveStatus="idle" />);
+    const panel = screen.getByRole('region', { name: 'Ghi chú mới' });
+    assert.equal(gsap.getTweensOf(panel).length, 0);
+    assert.equal(panel.style.opacity, '');
+    assert.equal(panel.style.visibility, '');
+    assert.equal(document.activeElement, titleInput());
+    view.unmount();
+  } finally { window.matchMedia = original; }
+});
+
 test('guest storage survives reopening, searches and keeps labels and reminders locally', async () => {
   const request = createLocalApi(window.localStorage);
   const services = createNoteServices(request);

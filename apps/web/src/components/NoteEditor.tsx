@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, LoaderCircle, StickyNote, Trash2, X } from 'lucide-react';
 import type { NoteDraft, NoteSaveStatus } from '../types/notes';
+import { useEntrance } from '../hooks/useEntrance';
 
 export interface NoteEditorProps {
   draft: NoteDraft;
@@ -25,8 +26,10 @@ const statusLabels: Record<NoteSaveStatus, string> = {
 export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, onRetry, onDelete, organization }: NoteEditorProps) {
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
+  const container = useRef<HTMLElement>(null);
+  useEntrance(container);
   useEffect(() => { titleInput.current?.focus(); }, []);
-  return <section className="note-editor" aria-labelledby={`${id}-heading`}>
+  return <section ref={container} className="note-editor" aria-labelledby={`${id}-heading`}>
     <header className="note-editor-header">
       <div className="note-editor-heading"><StickyNote size={18} /><h2 id={`${id}-heading`}>{isNew ? 'Ghi chú mới' : 'Chỉnh sửa ghi chú'}</h2></div>
       <button type="button" className="icon-button" onClick={onClose} disabled={disabled} aria-label="Đóng trình soạn ghi chú"><X size={19} /></button>

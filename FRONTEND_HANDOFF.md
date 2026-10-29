@@ -72,6 +72,8 @@ Chạy npm.cmd run test:web để kiểm thử giao diện DOM; npm.cmd test đ�
 
 ## Tìm kiếm và phân loại
 
+useEntrance.ts dùng GSAP + useGSAP, scope theo ref và revertOnUpdate để dọn tween khi đổi nội dung/unmount. matchMedia chỉ chạy khi prefers-reduced-motion: no-preference. Animation chỉ thay transform/opacity, hoàn tất thì xóa inline style; danh sách giới hạn 18 phần tử trong viewport. Dependency của editor không gồm draft hoặc version nên gõ/tự lưu không khởi động lại hiệu ứng. Không có callback animation điều khiển thao tác lưu hay mạng.
+
 Chế độ khách dùng localNotes.ts với khóa localStorage ghichu.guest.v1, cùng hợp đồng request qua createNoteServices. useNoteAutosave nhận transport theo nơi lưu; dữ liệu khách không đi qua API. Web Locks tuần tự hóa ghi giữa các tab nếu trình duyệt hỗ trợ; version vẫn dùng để đối chiếu. Mỗi thay đổi ghi chú/nhãn lưu trong một lần setItem; lỗi quota giữ bản nháp. Server tiếp tục kiểm tra session/chủ sở hữu như trước.
 
 GET /api/notes nhận thêm q (tối đa 200 ký tự), pinned=true, labelId và sort=updated|created|title. Tìm kiếm cả tiêu đề và nội dung, không phân biệt hoa/thường; các ký tự %, _ và dấu gạch chéo được hiểu như văn bản. Theo yêu cầu bổ sung, việc quá hạn/sắp hạn/quan trọng được ưu tiên trước ghim; trong các ghi chú cùng mức ưu tiên, ghim theo pinnedAt mới nhất trước, rồi mới đến thứ tự chọn. Note trả thêm pinned, pinnedAt và labels.

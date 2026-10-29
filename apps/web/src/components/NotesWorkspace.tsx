@@ -10,6 +10,7 @@ import { LabelManager, type LabelAction } from './LabelManager';
 import { NoteOrganization } from './NoteOrganization';
 import { NoteReminder, type ReminderChanges } from './NoteReminder';
 import { priority, taskState, taskLabel, formatDue, isCompleted } from '../reminders';
+import { useEntrance } from '../hooks/useEntrance';
 
 interface Props {
   guest?: boolean;
@@ -88,6 +89,12 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const searchInput = useRef<HTMLInputElement>(null);
   const [actionMessage, setActionMessage] = useState('');
   const filtered = Boolean(query || pinnedOnly || labelId);
+  const container = useRef<HTMLElement>(null);
+  const visibleNotes = mergeNotes(filters, notes);
+  const cardIds = visibleNotes.map(note => note.id).join('|');
+  useEntrance(container, '.note-card, .empty-notes', [loading, view, query, pinnedOnly, labelId, sort, cardIds]);
+  useEntrance(container, '.organization-feedback', [actionMessage]);
+  useEntrance(container, '.reminder-notifications', [reminders.map(note => note.id).join('|')]);
   useEffect(() => {
     const timeout = setTimeout(() => setQuery(search.trim()), 250);
     return () => clearTimeout(timeout);
@@ -361,7 +368,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     }
   }
 
-  return <section className="notes-workspace" aria-label="Không gian ghi chú">
+  return <section ref={container} className="notes-workspace" aria-label="Không gian ghi chú">
     {reminderError && <p className="field-error">{reminderError}</p>}
     {reminders.length > 0 && <section className="reminder-notifications" aria-label="Thông báo nhắc việc" aria-live="polite">
       <h2>Cần bạn chú ý · {reminders.length}{reminders.length === 100 ? '+' : ''}</h2>
@@ -439,7 +446,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         {filtered ? <><p>Thử từ khóa khác hoặc bỏ bớt bộ lọc.</p><button type="button" className="quiet-button" onClick={clearFilters}>Hiện tất cả ghi chú</button></>
           : <p>Bạn chưa có ghi chú nào.<br />Bắt đầu bằng nút Ghi chú mới ở phía trên.</p>}</div>
       : <div className={`notes-grid ${view === 'list' ? 'view-list' : ''}`} aria-label="Danh sách ghi chú">
-        {mergeNotes(filters, notes).map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
+        {visibleNotes.map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
           onClick={() => void openNote(note)} aria-pressed={editor?.note?.id === note.id} aria-label={`Mở ghi chú ${note.title}`}>
           <span className="note-card-corner">{note.pinned ? <span className="note-pinned-badge"><Pin size={14} />Đã ghim</span> : <StickyNote size={16} />}</span>
           <h3>{note.title}</h3><p>{note.content}</p>

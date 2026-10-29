@@ -1345,6 +1345,7 @@ form .primary-button {
 .reminder-notification .quiet-button { white-space: normal; text-align: left; font-size: 12px; overflow-wrap: anywhere; }
 @media(max-width:720px) { .reminder-time { align-items: stretch; } .reminder-time label { width: 100%; } .reminder-time input { font-size: 16px; width: 100%; } }
 /* Compact workspace, with writing and search as the primary actions. */
+.note-card { transition: background .18s, border-color .18s, box-shadow .18s; }
 .workspace-header { position: sticky; top: 0; z-index: 5; background: #faf9f6f5; backdrop-filter: blur(12px); padding: 14px clamp(18px,4vw,64px); }
 .workspace-main { max-width: 1400px; padding: 24px 32px 50px; }
 .workspace-intro { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 0 0 20px; }

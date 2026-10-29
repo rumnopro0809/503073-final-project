@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, LogOut, Mail, ShieldCheck, Sparkles, StickyNote, UserRound } from 'lucide-react';
 import { api, ApiError, type User } from './api';
 import { NotesWorkspace } from './components/NotesWorkspace';
+import { useEntrance } from './hooks/useEntrance';
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>ghi chú<span className="brand-dot">.</span></span></div>;
@@ -52,6 +53,8 @@ function Field({ label, name, value, onChange, error, type = 'text', autoComplet
 }
 
 function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'register'; onAuthenticated: (user: User, delivery?: string) => void; reauthEmail?: string }) {
+  const container = useRef<HTMLElement>(null);
+  useEntrance(container, '.story-body, .auth-top, .auth-card, .auth-bottom');
   const register = mode === 'register';
   const [values, setValues] = useState({ email: reauthEmail ?? '', displayName: '', password: '', confirmPassword: '' });
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -86,7 +89,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
     } finally { setBusy(false); }
   }
 
-  return <main className="auth-layout">
+  return <main ref={container} className="auth-layout">
     <Story />
     <section className="auth-side" aria-label={register ? 'Đăng ký tài khoản' : 'Đăng nhập tài khoản'}>
       <div className="auth-top"><span>BẠN VÀ NHỮNG Ý TƯỞNG</span><span className="top-flower">✳</span></div>

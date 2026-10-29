@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { Check, Pencil, Plus, Tag, Trash2, X } from 'lucide-react';
 import type { Label } from '../types/notes';
+import { useEntrance } from '../hooks/useEntrance';
 
 const COLORS = [
   ['#8b6bb1', 'Tím'], ['#3c8270', 'Xanh lá'], ['#b47c35', 'Vàng'],
@@ -15,6 +16,8 @@ export function LabelManager({ labels, busy, onAction, onClose }: {
   labels: Label[]; busy: boolean; onAction: (action: LabelAction) => Promise<boolean>; onClose: () => void;
 }) {
   const id = useId();
+  const container = useRef<HTMLElement>(null);
+  useEntrance(container);
   const input = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -29,7 +32,7 @@ export function LabelManager({ labels, busy, onAction, onClose }: {
       reset();
     }
   }
-  return <section className="label-manager" aria-labelledby={`${id}-heading`}>
+  return <section ref={container} className="label-manager" aria-labelledby={`${id}-heading`}>
     <header><div><h3 id={`${id}-heading`}><Tag size={17} /> Quản lý nhãn</h3><p>Dùng nhãn để nhóm bài học, công việc và ý tưởng.</p></div>
       <button type="button" className="icon-button" aria-label="Đóng quản lý nhãn" disabled={busy} onClick={onClose}><X size={18} /></button></header>
     <form onSubmit={event => void submit(event)} className="label-form" aria-busy={busy}>
