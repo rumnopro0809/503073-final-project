@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import path from 'node:path';
 import { authRouter, type AuthOptions } from './auth.js';
 import { notesRouter } from './notes.js';
+import { labelsRouter } from './labels.js';
 
 export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string }) {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   app.use('/api/auth', authRouter(options));
   app.use('/api/notes', notesRouter(options.db));
+  app.use('/api/labels', labelsRouter(options.db));
   app.use('/api', (_req, res) => res.status(404).json({ message: 'Không tìm thấy yêu cầu này.' }));
   if (options.webDir) {
     app.use(express.static(options.webDir));

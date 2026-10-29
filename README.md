@@ -4,7 +4,7 @@
 
 ## Trạng thái
 
-Ngày 29/10/2026: có tài khoản và luồng ghi chú tạo → tự lưu → tải lại → sửa, dùng chung editor, xóa có xác nhận, lưới/danh sách và phân trang. Tự lưu có thử lại an toàn, đối chiếu xung đột và đăng nhập lại giữ bản nháp. 82 bài test, TypeScript và build đạt. Local dùng PostgreSQL nhúng; SMTP thật, server PostgreSQL riêng, triển khai công khai và các mục rubric còn lại vẫn cần hoàn thiện/kiểm chứng. Hạn nộp là 23:59 ngày 03/11/2026; demo thử ngày 31/10.
+Ngày 30/10/2026: có tài khoản và luồng ghi chú tạo → tự lưu → tải lại → sửa, dùng chung editor, xóa có xác nhận, lưới/danh sách và phân trang. Tự lưu có thử lại an toàn, đối chiếu xung đột và đăng nhập lại giữ bản nháp. Đã thêm tìm kiếm trực tiếp trong tiêu đề/nội dung, ghim theo thời điểm ghim, quản lý nhãn màu, gắn nhiều nhãn, lọc kết hợp và sắp xếp. Giao diện có thanh tìm kiếm, bộ lọc rõ ràng và trạng thái không có kết quả. 94 bài test, TypeScript và build đạt. Local dùng PostgreSQL nhúng; SMTP thật, server PostgreSQL riêng, triển khai công khai và các mục rubric còn lại vẫn cần hoàn thiện/kiểm chứng. Hạn nộp là 23:59 ngày 03/11/2026; demo thử ngày 31/10.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 

@@ -1,7 +1,7 @@
 import { afterEach, after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import type { Note, NotesResponse } from '../src/types/notes';
+import type { Label, Note, NotesResponse } from '../src/types/notes';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost:5173/' });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'HTMLTextAreaElement', 'Node', 'Element', 'MutationObserver']) {
@@ -9,7 +9,7 @@ for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLInputE
 }
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { render, screen, cleanup, waitFor, act, fireEvent } = await import('@testing-library/react');
+const { render, screen, cleanup, waitFor, act, fireEvent, within } = await import('@testing-library/react');
 const { default: userEvent } = await import('@testing-library/user-event');
 const { NotesWorkspace } = await import('../src/components/NotesWorkspace');
 const { NoteEditor } = await import('../src/components/NoteEditor');
@@ -18,11 +18,12 @@ const { MemoryRouter } = await import('react-router-dom');
 const originalFetch = globalThis.fetch;
 const calls: { url: string; method: string; signal?: AbortSignal | null; body?: string; key?: string | null }[] = [];
 let respond: (url: string, init?: RequestInit) => Response | Promise<Response>;
+let respondLabels: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let expired: number;
 let isDirty: boolean;
 const onExpired = () => { expired++; };
 const onDirty = (value: boolean) => { isDirty = value; };
-const noteA: Note = { id: 'a', title: 'Ghi chú A', content: 'Nội dung A', version: 1, createdAt: '2026-10-27T08:00:00Z', updatedAt: '2026-10-27T08:00:00Z' };
+const noteA: Note = { id: 'a', title: 'Ghi chú A', content: 'Nội dung A', pinned: false, pinnedAt: null, labels: [], version: 1, createdAt: '2026-10-27T08:00:00Z', updatedAt: '2026-10-27T08:00:00Z' };
 const noteB: Note = { ...noteA, id: 'b', title: 'Ghi chú B', content: 'Nội dung B' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const page = (notes: Note[], hasMore = false, offset = 0): NotesResponse => ({ notes, pagination: { limit: 50, offset, hasMore } });
@@ -35,11 +36,12 @@ beforeEach(() => {
   calls.length = 0; expired = 0; isDirty = false;
   window.confirm = () => true;
   respond = url => url.includes('?') ? json(page([])) : json({ note: noteA });
+  respondLabels = () => json({ labels: [] });
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     calls.push({ url, method: init?.method || 'GET', signal: init?.signal, body: init?.body as string | undefined,
       key: new Headers(init?.headers).get('Idempotency-Key') });
-    return respond(url, init);
+    return url.startsWith('/api/labels') ? respondLabels(url, init) : respond(url, init);
   }) as typeof fetch;
 });
 afterEach(async () => { cleanup(); await act(async () => {}); });
@@ -422,4 +424,257 @@ test('deletion waits for an in-flight save before removing the note', async () =
   await act(async () => { release(json({ note: { ...noteA, ...body, version: 2 } })); });
   await waitFor(() => assert.equal(calls.filter(call => call.method === 'DELETE').length, 1));
   assert.equal(screen.queryByLabelText('Tiêu đề'), null);
+});
+
+const studyLabel: Label = { id: '11111111-1111-4111-8111-111111111111', name: 'Học tập', color: '#8b6bb1' };
+const workLabel: Label = { id: '22222222-2222-4222-8222-222222222222', name: 'Công việc', color: '#3c8270' };
+const searchInput = () => screen.getByRole<HTMLInputElement>('searchbox', { name: 'Tìm ghi chú' });
+const noteCard = (title: string) => screen.getByRole('button', { name: `Mở ghi chú ${title}` });
+const listCalls = () => calls.filter(call => call.url.startsWith('/api/notes?'));
+const queryOf = (url: string) => new URL(url, 'http://localhost').searchParams;
+
+// Stateful transport fixtures let UI tests assert that subsequent requests use the
+// metadata/version actually persisted, instead of returning a canned success.
+function organizationFixture(initialNotes: Note[] = [noteA, noteB], initialLabels: Label[] = [studyLabel, workLabel]) {
+  let notes = initialNotes.map(note => ({ ...note, labels: [...note.labels] }));
+  let labels = initialLabels.map(label => ({ ...label }));
+  let timestamp = 0;
+  const edited = (note: Note) => ({ ...note, version: note.version + 1, updatedAt: new Date(Date.UTC(2026, 9, 29, 12, 0, ++timestamp)).toISOString() });
+  respond = (url, init) => {
+    const method = init?.method || 'GET';
+    if (url.startsWith('/api/notes?')) return json(page(notes));
+    const id = url.split('/')[3];
+    const current = notes.find(note => note.id === id);
+    if (!current) return json({ message: 'Không tìm thấy ghi chú.' }, 404);
+    if (method === 'GET') return json({ note: current });
+    if (method === 'PATCH') {
+      const body = JSON.parse(init!.body as string);
+      if (body.version !== current.version) return json({ message: 'Có thay đổi mới.' }, 409);
+      let next = edited(current);
+      if (url.endsWith('/organization')) {
+        if (typeof body.pinned === 'boolean') {
+          next.pinned = body.pinned;
+          next.pinnedAt = body.pinned ? next.updatedAt : null;
+        }
+        if (body.labelIds) next.labels = labels.filter(label => body.labelIds.includes(label.id));
+      } else next = { ...next, title: body.title ?? current.title, content: body.content ?? current.content };
+      notes = notes.map(note => note.id === id ? next : note);
+      return json({ note: next });
+    }
+    throw new Error(`Unexpected notes request: ${method} ${url}`);
+  };
+  respondLabels = (url, init) => {
+    const method = init?.method || 'GET';
+    if (method === 'GET') return json({ labels });
+    const body = init?.body ? JSON.parse(init.body as string) : {};
+    if (method === 'POST') {
+      const label = { id: '33333333-3333-4333-8333-333333333333', name: body.name, color: body.color || '#8b6bb1' };
+      labels.push(label); return json({ label }, 201);
+    }
+    const id = url.split('/')[3];
+    const current = labels.find(label => label.id === id)!;
+    if (method === 'PATCH') {
+      const label = { ...current, ...body };
+      labels = labels.map(row => row.id === id ? label : row);
+      notes = notes.map(note => note.labels.some(row => row.id === id) ? edited({ ...note, labels: note.labels.map(row => row.id === id ? label : row) }) : note);
+      return json({ label });
+    }
+    if (method === 'DELETE') {
+      labels = labels.filter(label => label.id !== id);
+      notes = notes.map(note => note.labels.some(label => label.id === id) ? edited({ ...note, labels: note.labels.filter(label => label.id !== id) }) : note);
+      return new Response(null, { status: 204 });
+    }
+    throw new Error(`Unexpected labels request: ${method} ${url}`);
+  };
+  return { get notes() { return notes; }, get labels() { return labels; } };
+}
+
+test('live search debounces the whole query and preserves an unfinished editor', async () => {
+  respond = url => url.startsWith('/api/notes?') ? json(page(queryOf(url).get('q') === 'nội dung b' ? [noteB] : [noteA, noteB])) : json({ note: noteA });
+  mount();
+  await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  const actor = user();
+  await actor.click(screen.getByRole('button', { name: 'Ghi chú mới' }));
+  await actor.type(titleInput(), 'Bản nháp chỉ có tiêu đề');
+  const beforeSearch = listCalls().length;
+  await actor.type(searchInput(), 'nội dung b');
+  assert.equal(listCalls().length, beforeSearch);
+  assert.equal(screen.queryByRole('button', { name: /^Tìm kiếm$/ }), null);
+  await waitFor(() => assert.equal(queryOf(listCalls().at(-1)!.url).get('q'), 'nội dung b'));
+  await waitFor(() => assert.equal(screen.queryByRole('button', { name: 'Mở ghi chú Ghi chú A' }), null));
+  assert.ok(noteCard(noteB.title));
+  assert.equal(listCalls().length, beforeSearch + 1);
+  assert.equal(titleInput().value, 'Bản nháp chỉ có tiêu đề');
+  assert.equal(isDirty, true);
+});
+
+test('an older search response cannot replace the newer results', async () => {
+  let oldResponse!: (response: Response) => void;
+  respond = url => {
+    const query = queryOf(url).get('q');
+    if (query === 'A') return new Promise<Response>(resolve => { oldResponse = resolve; });
+    return json(page(query === 'B' ? [noteB] : [noteA, noteB]));
+  };
+  mount();
+  await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  const actor = user();
+  await actor.type(searchInput(), 'A');
+  await waitFor(() => assert.ok(oldResponse));
+  await actor.clear(searchInput());
+  await actor.type(searchInput(), 'B');
+  await waitFor(() => assert.equal(queryOf(listCalls().at(-1)!.url).get('q'), 'B'));
+  await act(async () => { oldResponse(json(page([noteA]))); });
+  assert.ok(noteCard(noteB.title));
+  assert.equal(screen.queryByRole('button', { name: 'Mở ghi chú Ghi chú A' }), null);
+  assert.equal(listCalls().find(call => queryOf(call.url).get('q') === 'A')!.signal?.aborted, true);
+});
+
+test('combined filters and sorting travel to every page and can be cleared', async () => {
+  respondLabels = () => json({ labels: [studyLabel] });
+  const matching = { ...noteA, pinned: true, pinnedAt: noteA.updatedAt, labels: [studyLabel] };
+  respond = url => json(page([matching], queryOf(url).get('offset') !== '50', queryOf(url).get('offset') === '50' ? 50 : 0));
+  mount();
+  await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  const actor = user();
+  await actor.type(searchInput(), 'Ghi');
+  await waitFor(() => assert.equal(queryOf(listCalls().at(-1)!.url).get('q'), 'Ghi'));
+  await actor.click(screen.getByRole('button', { name: 'Chỉ ghi chú đã ghim' }));
+  await actor.selectOptions(screen.getByLabelText('Lọc theo nhãn'), studyLabel.id);
+  await actor.selectOptions(screen.getByLabelText('Sắp xếp ghi chú'), 'title');
+  await waitFor(() => assert.equal(queryOf(listCalls().at(-1)!.url).get('sort'), 'title'));
+  await actor.click(await screen.findByRole('button', { name: 'Tải thêm ghi chú' }));
+  await waitFor(() => assert.ok(listCalls().some(call => queryOf(call.url).get('offset') === '50')));
+  const nextPage = queryOf(listCalls().at(-1)!.url);
+  assert.equal(nextPage.get('q'), 'Ghi');
+  assert.equal(nextPage.get('pinned'), 'true');
+  assert.equal(nextPage.get('labelId'), studyLabel.id);
+  assert.equal(nextPage.get('sort'), 'title');
+  await actor.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
+  await waitFor(() => {
+    const cleared = queryOf(listCalls().at(-1)!.url);
+    assert.equal(cleared.get('q'), null);
+    assert.equal(cleared.get('pinned'), null);
+    assert.equal(cleared.get('labelId'), null);
+  });
+  assert.equal(searchInput().value, '');
+  assert.equal(screen.getByRole('button', { name: 'Chỉ ghi chú đã ghim' }).getAttribute('aria-pressed'), 'false');
+});
+
+test('pinning flushes pending text first, persists the new version and moves the card to the top', async () => {
+  const state = organizationFixture();
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(contentInput().value, noteA.content));
+  await actor.type(contentInput(), ' vừa nhập');
+  await actor.click(screen.getByRole('button', { name: 'Ghim ghi chú' }));
+  await screen.findByRole('button', { name: 'Bỏ ghim ghi chú' });
+  const writes = calls.filter(call => call.method === 'PATCH');
+  assert.equal(writes[0].url, '/api/notes/a');
+  assert.equal(writes[1].url, '/api/notes/a/organization');
+  assert.equal(JSON.parse(writes[1].body!).version, 2);
+  assert.equal(state.notes.find(note => note.id === 'a')!.pinned, true);
+  assert.equal(contentInput().value, `${noteA.content} vừa nhập`);
+  const cards = screen.getAllByRole('button', { name: /^Mở ghi chú / });
+  assert.equal(cards[0].getAttribute('aria-label'), `Mở ghi chú ${noteA.title}`);
+  await actor.type(contentInput(), ' tiếp');
+  await screen.findByText('Đã lưu', {}, { timeout: 2000 });
+  const textWrites = calls.filter(call => call.method === 'PATCH' && call.url === '/api/notes/a');
+  assert.equal(JSON.parse(textWrites.at(-1)!.body!).version, 3);
+  await actor.click(screen.getByRole('button', { name: 'Bỏ ghim ghi chú' }));
+  await screen.findByRole('button', { name: 'Ghim ghi chú' });
+  assert.equal(state.notes.find(note => note.id === 'a')!.pinned, false);
+});
+
+test('failed autosave blocks pin mutation and retains the user draft', async () => {
+  respond = (url, init) => init?.method === 'PATCH' ? json({ message: 'Máy chủ tạm ngừng.' }, 503)
+    : url.includes('?') ? json(page([noteA])) : json({ note: noteA });
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(contentInput().value, noteA.content));
+  await actor.type(contentInput(), ' cần giữ');
+  await actor.click(screen.getByRole('button', { name: 'Ghim ghi chú' }));
+  await screen.findByRole('button', { name: 'Thử kết nối và lưu lại' });
+  assert.equal(calls.some(call => call.url.endsWith('/organization')), false);
+  assert.equal(contentInput().value, `${noteA.content} cần giữ`);
+  assert.equal(isDirty, true);
+});
+
+test('pinned cards stay before recently edited notes and the latest pin appears first', async () => {
+  const olderPin = { ...noteA, pinned: true, pinnedAt: '2026-10-28T08:00:00Z' };
+  const newerPin = { ...noteB, pinned: true, pinnedAt: '2026-10-29T08:00:00Z' };
+  const recent = { ...noteA, id: 'c', title: 'Ghi chú C', updatedAt: '2026-10-29T14:00:00Z' };
+  organizationFixture([recent, olderPin, newerPin]);
+  mount();
+  await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú C' });
+  assert.deepEqual(screen.getAllByRole('button', { name: /^Mở ghi chú / }).map(card => card.getAttribute('aria-label')),
+    ['Mở ghi chú Ghi chú B', 'Mở ghi chú Ghi chú A', 'Mở ghi chú Ghi chú C']);
+});
+
+test('labels can be attached and removed without replacing the note text', async () => {
+  const state = organizationFixture();
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(contentInput().value, noteA.content));
+  const labels = within(screen.getByRole('group', { name: 'Nhãn cho ghi chú' }));
+  await actor.click(labels.getByRole('checkbox', { name: studyLabel.name }));
+  await waitFor(() => assert.equal(labels.getByRole<HTMLInputElement>('checkbox', { name: studyLabel.name }).checked, true));
+  assert.deepEqual(state.notes.find(note => note.id === 'a')!.labels.map(label => label.id), [studyLabel.id]);
+  await actor.click(labels.getByRole('checkbox', { name: workLabel.name }));
+  await waitFor(() => assert.equal(state.notes.find(note => note.id === 'a')!.labels.length, 2));
+  await actor.click(labels.getByRole('checkbox', { name: studyLabel.name }));
+  await waitFor(() => assert.equal(labels.getByRole<HTMLInputElement>('checkbox', { name: studyLabel.name }).checked, false));
+  assert.deepEqual(state.notes.find(note => note.id === 'a')!.labels.map(label => label.id), [workLabel.id]);
+  assert.equal(contentInput().value, noteA.content);
+});
+
+test('label management creates, renames and confirms deletion without deleting attached notes', async () => {
+  const state = organizationFixture([{ ...noteA, labels: [studyLabel] }], [studyLabel]);
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(contentInput().value, noteA.content));
+  await actor.click(screen.getByRole('button', { name: 'Quản lý nhãn', expanded: false }));
+  await actor.type(screen.getByLabelText('Tên nhãn'), 'Ý tưởng');
+  await actor.click(screen.getByRole('button', { name: 'Tạo nhãn' }));
+  await screen.findByRole('button', { name: 'Chỉnh sửa nhãn Ý tưởng' });
+  assert.ok(state.labels.some(label => label.name === 'Ý tưởng'));
+  await actor.click(screen.getByRole('button', { name: 'Chỉnh sửa nhãn Học tập' }));
+  await actor.clear(screen.getByLabelText('Tên nhãn mới'));
+  await actor.type(screen.getByLabelText('Tên nhãn mới'), 'Ôn thi');
+  await actor.click(screen.getByRole('button', { name: 'Cập nhật nhãn' }));
+  await screen.findByRole('button', { name: 'Chỉnh sửa nhãn Ôn thi' });
+  assert.equal(state.notes[0].labels[0].name, 'Ôn thi');
+  window.confirm = () => false;
+  await actor.click(screen.getByRole('button', { name: 'Xóa nhãn Ôn thi' }));
+  assert.equal(calls.some(call => call.method === 'DELETE'), false);
+  window.confirm = () => true;
+  await actor.click(screen.getByRole('button', { name: 'Xóa nhãn Ôn thi' }));
+  await waitFor(() => assert.equal(screen.queryByRole('button', { name: 'Chỉnh sửa nhãn Ôn thi' }), null));
+  assert.equal(state.notes.length, 1);
+  assert.equal(state.notes[0].labels.length, 0);
+  assert.equal(contentInput().value, noteA.content);
+  await actor.type(contentInput(), ' sau sửa nhãn');
+  await screen.findByText('Đã lưu', {}, { timeout: 2000 });
+  assert.equal(state.notes[0].content, `${noteA.content} sau sửa nhãn`);
+});
+
+test('a saved note that stops matching the search leaves the cards but stays open for editing', async () => {
+  const state = organizationFixture([noteA]);
+  mount();
+  const actor = user();
+  await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
+  await actor.type(searchInput(), 'Ghi chú A');
+  await waitFor(() => assert.equal(queryOf(listCalls().at(-1)!.url).get('q'), 'Ghi chú A'));
+  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
+  await waitFor(() => assert.equal(titleInput().value, noteA.title));
+  await actor.clear(titleInput());
+  await actor.type(titleInput(), 'Tên mới');
+  await screen.findByText('Đã lưu', {}, { timeout: 2000 });
+  assert.equal(state.notes[0].title, 'Tên mới');
+  assert.equal(screen.queryByRole('button', { name: 'Mở ghi chú Tên mới' }), null);
+  assert.equal(titleInput().value, 'Tên mới');
+  assert.equal(contentInput().value, noteA.content);
 });

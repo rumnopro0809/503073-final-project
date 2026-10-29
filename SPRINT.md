@@ -9,7 +9,7 @@ Hoàn thiện và ghép từng luồng chạy xuyên suốt theo rubric. Không 
 | Ngày | Mục tiêu | Điều kiện chuyển bước |
 | --- | --- | --- |
 | 29/10 | Đã ghép core tự lưu, xóa có xác nhận, lưới/danh sách, thử lại/xung đột và đăng nhập lại giữ editor | 82 bài test và build đạt; còn kiểm tra trực quan và demo thủ công |
-| 30/10 | Tìm kiếm, ghim, nhãn/lọc và tài khoản còn thiếu; thử môi trường triển khai hoặc Docker sớm | Từng mục có ca thử và dữ liệu demo; phát hiện lỗi môi trường trước buổi demo |
+| 30/10 | Đã ghép tìm kiếm trực tiếp, ghim, nhãn màu, lọc kết hợp, sắp xếp và cải thiện giao diện; tiếp tục tài khoản/upload/triển khai | 94 bài test và build đạt; kịch bản demo nhãn/ghim đã bổ sung, cần cả nhóm thử thủ công |
 | 31/10 | Demo thử đầu buổi theo DEMO_31_10.md, ghi lỗi và sửa theo mức ưu tiên; tiếp tục upload, bảo vệ ghi chú và các phần còn thiếu | Core chạy lại sau khi sửa, có danh sách lỗi tái hiện được; không coi core là toàn bộ 32 mục |
 | 01/11 | Chia sẻ theo quyền, thu hồi và cộng tác WebSocket; tích hợp AI/thiết kế offline theo tiến độ thực tế | Hai tài khoản không vượt quyền; sửa đồng thời không mất thay đổi; AI có nguồn |
 | 02/11 | Hoàn thiện các mục còn thiếu, kiểm tra offline/đồng bộ và triển khai; kiểm thử toàn bộ rubric, dữ liệu mẫu và tập demo | Danh sách tình trạng đủ 32 mục, lỗi còn lại có mức ưu tiên rõ; máy chấm tái lập được |

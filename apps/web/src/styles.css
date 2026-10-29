@@ -1223,6 +1223,96 @@ form .primary-button {
   .note-editor-fields input, .note-editor-fields textarea { font-size: 16px; }
 }
 
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.notes-search-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.notes-search { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; min-height: 50px; padding: 0 14px; border: 1px solid #dcd4e5; border-radius: 11px; color: #77618e; background: #fff; }
+.notes-search:focus-within { border-color: #9273af; box-shadow: 0 0 0 3px #9273af19; }
+.notes-search input { width: 100%; min-width: 0; padding: 13px 0; border: 0; outline: 0; font: inherit; font-size: 14px; color: #3a3345; background: transparent; }
+.notes-search input::-webkit-search-cancel-button { display: none; }
+.notes-search input::placeholder { color: #8d8199; }
+.notes-search .icon-button { width: 32px; height: 32px; flex-shrink: 0; padding: 6px; border: 0; }
+.manage-labels-button { margin: 0; min-height: 46px; font-size: 13px; white-space: nowrap; }
+.notes-filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.notes-filter-row .quiet-button { margin: 0; font-size: 12px; min-height: 42px; }
+.pin-filter { border-color: #e5ddec; }
+.pin-filter.active, .note-pin.is-pinned { color: #654287; border-color: #cbb9df; background: #f0e8f8; }
+.filter-select { display: flex; gap: 8px; align-items: center; border: 1px solid #e5ddec; border-radius: 8px; background: #fff; padding: 0 10px; color: #75647f; font-size: 12px; min-width: 0; }
+.filter-select select { min-width: 0; max-width: 210px; min-height: 42px; font: inherit; color: #4d415a; background: transparent; border: 0; padding: 7px 3px; cursor: pointer; }
+.filter-select:focus-within { outline: 2px solid #ae95c5; outline-offset: 2px; }
+.filter-select select:focus { outline: 0; }
+.sort-select { margin-left: auto; }
+.notes-order-hint { display: flex; gap: 6px; align-items: center; margin: 13px 0 24px; font-size: 11px; color: #84758e; }
+.labels-load-error { margin-bottom: 20px; }
+.labels-load-error .quiet-button { margin: 0; }
+.organization-feedback { padding: 10px 14px; background: #edf5ee; border: 1px solid #d7e5d8; border-radius: 8px; font-size: 12px; color: #43644d; line-height: 1.7; }
+.note-organization { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid #eee8f1; }
+.note-pin { margin: 0; min-height: 39px; font-size: 12px; }
+.organization-hint { margin: 0 0 15px; font-size: 12px; line-height: 1.8; color: #84758e; }
+.note-label-picker { min-width: 185px; max-width: 100%; border: 1px solid #e5ddec; border-radius: 8px; background: #fff; }
+.note-label-picker summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #756182; font-size: 12px; cursor: pointer; list-style: none; }
+.note-label-picker summary::-webkit-details-marker { display: none; }
+.note-label-picker summary::after { content: '+'; margin-left: auto; font-size: 17px; }
+.note-label-picker[open] summary::after { content: '−'; }
+.note-label-picker summary > span { display: grid; place-items: center; min-width: 20px; height: 20px; border-radius: 5px; background: #f0e9f7; color: #71558c; font-size: 11px; }
+.note-label-picker summary:focus-visible { outline: 2px solid #ae95c5; outline-offset: 3px; border-radius: 7px; }
+.note-label-picker fieldset { border: 0; border-top: 1px solid #eee8f1; margin: 0; padding: 8px 12px; max-height: 220px; overflow: auto; }
+.note-label-picker fieldset p { color: #84758e; font-size: 12px; }
+.note-label-picker > .quiet-button { margin: 0 10px 10px; font-size: 12px; }
+.note-label-option { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 13px; cursor: pointer; line-height: 1.5; }
+.note-label-option input { width: 17px; height: 17px; accent-color: #806296; flex-shrink: 0; }
+.note-label-option i, .label-chip i { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; }
+.note-label-option span { overflow-wrap: anywhere; }
+.note-labels { display: flex; flex-wrap: wrap; gap: 6px; max-width: 100%; }
+.note-organization > .note-labels { align-self: center; }
+.label-chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; padding: 4px 8px; border: 1px solid #e0d8e8; border-radius: 20px; background: #ffffffb0; color: #65576f; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.note-card .note-labels { margin: 0 0 13px; }
+.note-card p { font-size: 13px; color: #6d6178; }
+.note-card time { font-size: 11px; color: #7d7089; }
+.note-pinned-badge { display: inline-flex; align-items: center; gap: 5px; color: #7a568f; font-size: 11px; }
+.view-list .note-card-corner:has(.note-pinned-badge) { display: block; margin-bottom: 8px; }
+.label-manager { margin: 0 0 24px; padding: 20px; border: 1px solid #dcd2e6; border-radius: 12px; background: #faf7fd; }
+.label-manager > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+.label-manager h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; font-size: 14px; font-weight: 600; color: #675178; }
+.label-manager header p { margin: 0; font-size: 12px; color: #84758e; line-height: 1.7; }
+.label-form > label { display: block; margin-bottom: 7px; font-size: 12px; color: #70607c; }
+.label-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.label-name-row input { flex: 1; min-width: 120px; border: 1px solid #dcd2e6; border-radius: 8px; background: #fff; color: #3a3345; padding: 10px 12px; font: inherit; font-size: 14px; }
+.label-name-row input:focus-visible { outline: 2px solid #ae95c5; outline-offset: 2px; }
+.label-name-row .quiet-button { margin: 0; min-height: 42px; font-size: 12px; }
+.label-colors { display: flex; align-items: center; gap: 8px; border: 0; padding: 10px 0 0; margin: 0; }
+.label-colors legend { float: left; padding: 10px 12px 0 0; font-size: 12px; color: #84758e; }
+.label-colors label { position: relative; cursor: pointer; }
+.label-colors input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.label-colors label > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; }
+.label-colors input:checked + span { box-shadow: 0 0 0 2px #faf7fd, 0 0 0 4px #baa6ca; }
+.label-colors input:focus-visible + span { outline: 2px solid #674a83; outline-offset: 4px; }
+.labels-empty { margin: 18px 0 0; color: #84758e; font-size: 12px; line-height: 1.8; }
+.label-manager-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px 18px; list-style: none; margin: 20px 0 0; padding: 0; }
+.label-manager-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid #e9e0ef; min-width: 0; }
+.label-manager-list li > div { display: flex; gap: 4px; flex-shrink: 0; }
+.label-manager-list .icon-button { width: 34px; height: 34px; padding: 7px; }
+.label-delete { color: #a2515e; }
+.note-editor-fields label { font-size: 13px; }
+.note-save-status { font-size: 12px; }
+.note-character-count, .draft-explanation { font-size: 12px; }
+@media (max-width: 720px) {
+  .notes-search-row { flex-wrap: wrap; }
+  .notes-search { flex-basis: 100%; }
+  .notes-search input, .filter-select select, .label-name-row input { font-size: 16px; }
+  .manage-labels-button { width: 100%; justify-content: center; }
+  .notes-filter-row { gap: 9px; }
+  .filter-select { flex: 1; }
+  .filter-select select { max-width: 100%; width: 100%; }
+  .sort-select { margin-left: 0; flex-basis: 100%; }
+  .note-organization { gap: 9px; }
+  .note-label-picker { flex: 1; }
+  .note-organization > .note-labels { flex-basis: 100%; }
+  .label-manager { padding: 16px; }
+  .label-colors { flex-wrap: wrap; gap: 10px; }
+  .label-colors label > span { width: 32px; height: 32px; }
+  .notes-order-hint { font-size: 12px; }
+}
+
 @media(prefers-reduced-motion:reduce) {
   * {
     animation:none!important;

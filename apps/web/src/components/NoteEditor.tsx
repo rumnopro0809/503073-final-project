@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, LoaderCircle, StickyNote, Trash2, X } from 'lucide-react';
 import type { NoteDraft, NoteSaveStatus } from '../types/notes';
 
@@ -13,6 +13,7 @@ export interface NoteEditorProps {
   disabled?: boolean;
   onRetry?: () => void;
   onDelete?: () => void;
+  organization?: ReactNode;
 }
 
 const statusLabels: Record<NoteSaveStatus, string> = {
@@ -21,7 +22,7 @@ const statusLabels: Record<NoteSaveStatus, string> = {
 };
 
 // A controlled form: persistence belongs to the autosave hook that consumes onChange.
-export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, onRetry, onDelete }: NoteEditorProps) {
+export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, onRetry, onDelete, organization }: NoteEditorProps) {
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
   useEffect(() => { titleInput.current?.focus(); }, []);
@@ -30,6 +31,7 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
       <div className="note-editor-heading"><StickyNote size={18} /><h2 id={`${id}-heading`}>{isNew ? 'Ghi chú mới' : 'Chỉnh sửa ghi chú'}</h2></div>
       <button type="button" className="icon-button" onClick={onClose} disabled={disabled} aria-label="Đóng trình soạn ghi chú"><X size={19} /></button>
     </header>
+    {organization}
     <div className="note-editor-fields">
       <label htmlFor={`${id}-title`}>Tiêu đề</label>
       <input ref={titleInput} id={`${id}-title`} name="title" value={draft.title} maxLength={200} required disabled={disabled}

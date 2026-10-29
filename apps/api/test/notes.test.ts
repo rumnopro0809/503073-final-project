@@ -41,10 +41,61 @@ before(async () => {
 });
 
 beforeEach(async () => {
-  await db.query('TRUNCATE notes');
+  await db.query('TRUNCATE notes, labels CASCADE');
   await db.query("UPDATE sessions SET expires_at = NOW() + INTERVAL '1 day'");
 });
 after(async () => { await db.close(); });
+
+test('organization filters search literal content and enforce label ownership and versions', async () => {
+  const note = await createNote(alice, { title: 'Project', content: '100% _ path\\code' });
+  await createNote(alice, { title: 'Other', content: 'plain text' });
+  const label = (await request(app).post('/api/labels').set(headers).set('Cookie', alice).send({ name: 'Học tập' }).expect(201)).body.label;
+  await request(app).post('/api/labels').set(headers).set('Cookie', alice).send({ name: 'học tập' }).expect(409);
+  await request(app).patch(`/api/notes/${note.id}/organization`).set(headers).set('Cookie', bob).send({ version: 1, pinned: true }).expect(404);
+  const foreign = await createNote(bob);
+  await request(app).patch(`/api/notes/${foreign.id}/organization`).set(headers).set('Cookie', bob).send({ version: 1, labelIds: [label.id] }).expect(422);
+  const organized = (await request(app).patch(`/api/notes/${note.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true, labelIds: [label.id] }).expect(200)).body.note;
+  assert.equal(organized.version, 2); assert.ok(organized.pinnedAt); assert.equal(organized.labels[0].name, 'Học tập');
+  await request(app).patch(`/api/notes/${note.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: false }).expect(409);
+  for (const q of ['%', '_', '\\', 'PROJECT']) {
+    const found = await request(app).get('/api/notes').query({ q, pinned: true, labelId: label.id }).set('Cookie', alice).expect(200);
+    assert.deepEqual(found.body.notes.map((n: {id:string}) => n.id), [note.id]);
+  }
+  assert.deepEqual((await request(app).get('/api/labels').set('Cookie', bob)).body.labels, []);
+  await request(app).patch(`/api/labels/${label.id}`).set(headers).set('Cookie', bob).send({ name: 'Intrude' }).expect(404);
+  await request(app).patch(`/api/labels/${label.id}`).set(headers).set('Cookie', alice).send({ name: 'Đã đổi', color: '#527db5' }).expect(200);
+  const renamed = (await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note;
+  assert.equal(renamed.labels[0].name, 'Đã đổi'); assert.equal(renamed.version, 3);
+  await request(app).delete(`/api/labels/${label.id}`).set(headers).set('Cookie', bob).send({}).expect(404);
+  await request(app).delete(`/api/labels/${label.id}`).set(headers).set('Cookie', alice).send({}).expect(204);
+  const retained = (await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note;
+  assert.equal(retained.content, note.content); assert.deepEqual(retained.labels, []); assert.equal(retained.version, 4);
+});
+
+test('pins order by pin time, survive content edits, and can be removed', async () => {
+  const a = await createNote(alice, { title: 'A', content: 'first' });
+  const b = await createNote(alice, { title: 'B', content: 'second' });
+  for (const note of [a, b]) await request(app).patch(`/api/notes/${note.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true }).expect(200);
+  await db.query("UPDATE notes SET pinned_at = '2026-10-01' WHERE id=$1", [a.id]);
+  await request(app).patch(`/api/notes/${a.id}`).set(headers).set('Cookie', alice).send({ version: 2, content: 'edited' }).expect(200);
+  const result = await request(app).get('/api/notes').query({ pinned: true, limit: 1 }).set('Cookie', alice).expect(200);
+  assert.equal(result.body.notes[0].id, b.id); assert.equal(result.body.pagination.hasMore, true);
+  const next = await request(app).get('/api/notes').query({ pinned: true, limit: 1, offset: 1 }).set('Cookie', alice).expect(200);
+  assert.equal(next.body.notes[0].id, a.id);
+  const unpinned = await request(app).patch(`/api/notes/${b.id}/organization`).set(headers).set('Cookie', alice).send({ version: 2, pinned: false }).expect(200);
+  assert.equal(unpinned.body.note.pinnedAt, null);
+});
+
+test('organization rejects malformed filters and labels and preserves data across migrations', async () => {
+  for (const query of [{ q: 'x'.repeat(201) }, { pinned: 'false' }, { labelId: 'bad' }, { sort: 'sql' }])
+    await request(app).get('/api/notes').query(query).set('Cookie', alice).expect(422);
+  for (const body of [{ name: '' }, { name: 'x'.repeat(41) }, { name: 'Valid', color: 'red' }, { name: 'Valid', ownerId: bobId }])
+    await request(app).post('/api/labels').set(headers).set('Cookie', alice).send(body).expect(422);
+  await request(app).get('/api/labels').expect(401);
+  const note = await createNote();
+  await migrate(db);
+  assert.equal((await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note.content, note.content);
+});
 
 test('every notes endpoint requires an authenticated session', async () => {
   const id = randomUUID();
@@ -76,7 +127,7 @@ test('a note requires only title and content and returns its resource location',
   const response = await request(app).post('/api/notes').set(headers).set('Cookie', alice).send(payload);
   assert.equal(response.status, 201);
   assert.equal(response.headers.location, `/api/notes/${response.body.note.id}`);
-  assert.deepEqual(Object.keys(response.body.note).sort(), ['content', 'createdAt', 'id', 'title', 'updatedAt', 'version']);
+  assert.deepEqual(Object.keys(response.body.note).sort(), ['content', 'createdAt', 'id', 'labels', 'pinned', 'pinnedAt', 'title', 'updatedAt', 'version']);
 });
 
 test('retrying creation with the same key returns the original note without duplicates', async () => {
@@ -295,6 +346,7 @@ test('expired and logged-out sessions cannot access notes', async () => {
 
 test('the notes schema can be added to an account database without losing accounts', async () => {
   // This database is the isolated in-memory test database, not .data/postgres.
+  await db.query('DROP TABLE note_labels');
   await db.query('DROP TABLE notes');
   const before = (await db.query('SELECT id FROM users ORDER BY id')).rows;
   await migrate(db);

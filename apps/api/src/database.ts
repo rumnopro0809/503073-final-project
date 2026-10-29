@@ -71,6 +71,30 @@ export async function migrate(db: Database) {
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS creation_key UUID');
     await sql.query(`CREATE UNIQUE INDEX IF NOT EXISTS notes_owner_creation_key_idx
       ON notes(owner_id, creation_key) WHERE creation_key IS NOT NULL`);
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned_at TIMESTAMPTZ');
+    await sql.query('UPDATE notes SET pinned_at = updated_at WHERE pinned AND pinned_at IS NULL');
+    await sql.query('CREATE UNIQUE INDEX IF NOT EXISTS notes_id_owner_idx ON notes(id, owner_id)');
+    await sql.query(`CREATE INDEX IF NOT EXISTS notes_owner_pinned_updated_idx
+      ON notes(owner_id, pinned DESC, updated_at DESC, id DESC)`);
+    await sql.query(`CREATE TABLE IF NOT EXISTS labels (
+      id UUID PRIMARY KEY,
+      owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(40) NOT NULL CHECK (char_length(btrim(name)) BETWEEN 1 AND 40),
+      color VARCHAR(7) NOT NULL DEFAULT '#8b6bb1'
+        CHECK (color IN ('#8b6bb1', '#3c8270', '#b47c35', '#b75d78', '#527db5', '#737784')),
+      UNIQUE(id, owner_id)
+    )`);
+    await sql.query('CREATE UNIQUE INDEX IF NOT EXISTS labels_owner_name_idx ON labels(owner_id, lower(name))');
+    await sql.query(`CREATE TABLE IF NOT EXISTS note_labels (
+      note_id UUID NOT NULL,
+      label_id UUID NOT NULL,
+      owner_id UUID NOT NULL,
+      PRIMARY KEY(note_id, label_id),
+      FOREIGN KEY(note_id, owner_id) REFERENCES notes(id, owner_id) ON DELETE CASCADE,
+      FOREIGN KEY(label_id, owner_id) REFERENCES labels(id, owner_id) ON DELETE CASCADE
+    )`);
+    await sql.query('CREATE INDEX IF NOT EXISTS note_labels_owner_label_idx ON note_labels(owner_id, label_id, note_id)');
     await sql.query('DELETE FROM sessions WHERE expires_at <= NOW()');
     await sql.query('DELETE FROM verification_tokens WHERE expires_at <= NOW()');
   });

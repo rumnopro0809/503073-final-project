@@ -69,3 +69,13 @@ Chạy npm.cmd run dev từ thư mục project sau khi dừng server cũ của c
 6. Kiểm tra bằng bàn phím và các độ rộng điện thoại, tablet, desktop.
 
 Chạy npm.cmd run test:web để kiểm thử giao diện DOM; npm.cmd test để chạy cả backend/frontend; npm.cmd run build để kiểm tra TypeScript và build. Các kiểm thử DOM không thay thế kiểm tra trực quan trong trình duyệt.
+
+## Tìm kiếm và phân loại
+
+GET /api/notes nhận thêm q (tối đa 200 ký tự), pinned=true, labelId và sort=updated|created|title. Tìm kiếm cả tiêu đề và nội dung, không phân biệt hoa/thường; các ký tự %, _ và dấu gạch chéo được hiểu như văn bản. Ghim luôn đứng trước, theo pinnedAt mới nhất trước, rồi mới đến thứ tự chọn. Note trả thêm pinned, pinnedAt và labels.
+
+GET/POST /api/labels và PATCH/DELETE /api/labels/:id quản lý nhãn riêng từng tài khoản. Tên dài 1–40 ký tự, không trùng trong tài khoản (không phân biệt hoa/thường), có sáu màu định sẵn. Xóa nhãn không xóa ghi chú.
+
+PATCH /api/notes/:id/organization nhận version cùng pinned và/hoặc labelIds (tối đa 20). Backend kiểm tra chủ sở hữu cả ghi chú lẫn nhãn, tăng version trong transaction. Đổi tên/màu hoặc xóa nhãn cũng tăng version các ghi chú liên quan. Nếu tab khác đang soạn bản cũ, cơ chế đối chiếu xung đột vẫn áp dụng.
+
+Frontend lưu hết nội dung đang nhập trước khi thay đổi phân loại, khóa thao tác trong thời gian chờ, rồi nhận phiên bản mới để tiếp tục tự lưu. Nếu không lưu được thì giữ bản nháp và không thực hiện thao tác phân loại. Đổi bộ lọc không đóng editor; các phản hồi tìm kiếm cũ bị hủy/bỏ qua.
