@@ -1,6 +1,6 @@
 import { ApiError, type api } from './api';
 import type { Note, Label } from './types/notes';
-import { isCompleted, priority } from './reminders';
+import { isCompleted, priority, inCategory, type NoteCategory } from './reminders';
 
 export const GUEST_KEY = 'ghichu.guest.v1';
 type Store = { version: 1; notes: Note[]; labels: Label[]; keys: Record<string, string> };
@@ -37,6 +37,8 @@ export function createLocalApi(storage: Pick<Storage, 'getItem' | 'setItem'>): t
         if (method === 'GET' && (!parts[1] || parts[1] === 'reminders')) {
           const q = (parsed.searchParams.get('q') ?? '').trim().toLowerCase();
           let notes = sortNotes(store.notes.map(hydrate).filter(note =>
+            inCategory(note, (parsed.searchParams.get('category') ?? 'all') as NoteCategory)
+            &&
             (!q || note.title.toLowerCase().includes(q) || note.content.toLowerCase().includes(q))
             && (parsed.searchParams.get('pinned') !== 'true' || note.pinned)
             && (!parsed.searchParams.get('labelId') || note.labels.some(label => label.id === parsed.searchParams.get('labelId')))));

@@ -106,6 +106,26 @@ test('every notes endpoint requires an authenticated session', async () => {
   assert.equal((await request(app).delete(`/api/notes/${id}`).set(headers).send({})).status, 401);
 });
 
+test('sidebar categories filter before pagination and remain scoped to the account', async () => {
+  for (let i=0;i<52;i++) await db.query('INSERT INTO notes(id,owner_id,title,content) VALUES($1,$2,$3,$4)',[randomUUID(),aliceId,`Regular ${i}`,'plain']);
+  const a = await createNote(alice,{title:'Important A',content:'needle'});
+  const b = await createNote(alice,{title:'Important B',content:'needle'});
+  for (const note of [a,b]) await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie',alice).send({version:1,important:true}).expect(200);
+  const foreign = await createNote(bob,{title:'Important foreign',content:'needle'});
+  await request(app).patch(`/api/notes/${foreign.id}/reminder`).set(headers).set('Cookie',bob).send({version:1,important:true}).expect(200);
+  const first = await request(app).get('/api/notes').query({category:'important',q:'needle',limit:1}).set('Cookie',alice).expect(200);
+  assert.equal(first.body.notes.length,1); assert.equal(first.body.pagination.hasMore,true);
+  const second = await request(app).get('/api/notes').query({category:'important',q:'needle',limit:1,offset:1}).set('Cookie',alice).expect(200);
+  assert.equal(second.body.pagination.hasMore,false);
+  assert.deepEqual(new Set([first.body.notes[0].id,second.body.notes[0].id]),new Set([a.id,b.id]));
+  await request(app).get('/api/notes').query({category:'invalid'}).set('Cookie',alice).expect(422);
+  await request(app).patch(`/api/notes/${a.id}/reminder`).set(headers).set('Cookie',alice).send({version:2,dueAt:new Date(Date.now()-60000).toISOString()}).expect(200);
+  assert.equal((await request(app).get('/api/notes?category=overdue').set('Cookie',alice)).body.notes[0].id,a.id);
+  await request(app).patch(`/api/notes/${a.id}/reminder`).set(headers).set('Cookie',alice).send({version:3,completed:true}).expect(200);
+  assert.equal((await request(app).get('/api/notes?category=overdue').set('Cookie',alice)).body.notes.length,0);
+  assert.equal((await request(app).get('/api/notes?category=completed').set('Cookie',alice)).body.notes[0].id,a.id);
+});
+
 test('reminders prioritize urgent notes before pins, persist completion and enforce ownership', async () => {
   const pinned = await createNote(alice, { title: 'Pinned', content: 'later' });
   await request(app).patch(`/api/notes/${pinned.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true }).expect(200);

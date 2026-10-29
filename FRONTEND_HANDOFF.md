@@ -72,6 +72,8 @@ Chạy npm.cmd run test:web để kiểm thử giao diện DOM; npm.cmd test đ�
 
 ## Tìm kiếm và phân loại
 
+GET /api/notes có category=all|important|overdue|upcoming|daily|completed, lọc trước LIMIT/OFFSET và luôn đi cùng owner_id. Upcoming chỉ lấy việc chưa hoàn thành với hạn trong 24 giờ tới; completed dùng quy tắc hoàn thành trong ngày Việt Nam cho việc daily. localNotes dùng chung inCategory ở reminders.ts. Sidebar giữ state panel notes/settings/about trong cùng workspace, chỉ ẩn vùng notes để không hủy engine. Mật độ/cỡ chữ lưu local theo user.id hoặc guest; không gửi lên hồ sơ máy chủ.
+
 useCardLayout.ts chụp Flip.getState ngay trước setView, rồi Flip.from sau khi React đổi bố cục. Capture hoàn tất tween cũ trước khi đo, giới hạn 18 thẻ trong viewport, dọn animation qua useGSAP/matchMedia. Thay đổi view không chạy lại entrance của danh sách để tránh hai hiệu ứng cùng ghi transform. Editor dùng timeline trượt/scale và stagger các phần, không phụ thuộc draft/version.
 
 useEntrance.ts dùng GSAP + useGSAP, scope theo ref và revertOnUpdate để dọn tween khi đổi nội dung/unmount. matchMedia chỉ chạy khi prefers-reduced-motion: no-preference. Animation chỉ thay transform/opacity, hoàn tất thì xóa inline style; danh sách giới hạn 18 phần tử trong viewport. Dependency của editor không gồm draft hoặc version nên gõ/tự lưu không khởi động lại hiệu ứng. Không có callback animation điều khiển thao tác lưu hay mạng.

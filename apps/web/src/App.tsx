@@ -151,7 +151,7 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
     finally { setResending(false); }
   }
   return <div className="workspace">
-    <header className="workspace-header"><Brand /><div className="account-bar"><span className="avatar">{user.displayName.slice(0, 1).toLocaleUpperCase('vi')}</span><span className="account-name">{user.displayName}</span><button className="quiet-button" onClick={logout} disabled={busy}><LogOut size={17} />{busy ? 'Đang đăng xuất…' : 'Đăng xuất'}</button></div></header>
+    <header className="workspace-header"><Brand /><div className="account-bar"><span className="avatar">{user.displayName.slice(0, 1).toLocaleUpperCase('vi')}</span><span className="account-name">{user.displayName}</span>{busy && <span>Đang đăng xuất…</span>}</div></header>
     <main className="workspace-main">
       {!user.emailVerified && <div className="verification-banner"><Mail size={21} /><div><strong>Tài khoản của bạn chưa được xác minh</strong><p>{emailFailed ? 'Chưa gửi được email xác minh. Bạn có thể yêu cầu gửi lại.' : <>Kiểm tra hộp thư <b>{user.email}</b> và mở liên kết xác minh. Bạn vẫn có thể sử dụng ứng dụng.</>}</p></div><button className="text-button" onClick={resend} disabled={resending}>{resending ? 'Đang gửi…' : 'Gửi lại email'}</button></div>}
       {user.emailVerified && new URLSearchParams(location.search).get('verification') === 'success' && <div className="notice success" role="status"><CheckCircle2 size={18} /> Email đã được xác minh thành công.</div>}
@@ -159,7 +159,7 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
       {error && <div className="notice error" role="alert">{error}</div>}
       {message && <div className="notice success" role="status">{message}</div>}
       <div className="workspace-intro"><h1>Ghi chú của bạn<span>.</span></h1><p>Lưu trên máy chủ · Mở lại bằng tài khoản này trên thiết bị khác.</p><button type="button" className="quiet-button" onClick={async () => { if (!beforeLeaveRef.current || await beforeLeaveRef.current()) navigate('/guest'); }}>Mở ghi chú trên máy</button></div>
-      <NotesWorkspace onSessionExpired={onSessionExpired} onDirtyChange={setDraftDirty}
+      <NotesWorkspace onSessionExpired={onSessionExpired} onDirtyChange={setDraftDirty} onLogout={() => { if (!busy) void logout(); }} preferenceKey={`ghichu.display.${user.id}`}
         authenticationRevision={authenticationRevision} beforeLeaveRef={beforeLeaveRef} />
     </main>
     <footer className="workspace-footer">Một chút ngăn nắp, mỗi ngày.</footer>
@@ -177,7 +177,7 @@ function GuestHome({ signedIn = false }: { signedIn?: boolean }) {
       <button className="quiet-button" onClick={() => void leave(signedIn ? '/' : '/login')}>{signedIn ? 'Ghi chú tài khoản' : 'Đăng nhập'}</button>
       {!signedIn && <button className="primary-button new-note-button" onClick={() => void leave('/register')}>Tạo tài khoản</button>}</div></header>
     <main className="workspace-main"><div className="workspace-intro"><h1>Ghi chú trên máy<span>.</span></h1><p>Không cần tài khoản. Tự lưu trong trình duyệt này; xóa dữ liệu trình duyệt sẽ xóa ghi chú. Ghi chú trên máy và tài khoản được giữ riêng.</p></div>
-      <NotesWorkspace guest onSessionExpired={noSession} onDirtyChange={noSession} beforeLeaveRef={beforeLeaveRef} />
+      <NotesWorkspace guest onSessionExpired={noSession} onDirtyChange={noSession} beforeLeaveRef={beforeLeaveRef} onAccount={() => void leave(signedIn ? '/' : '/login')} />
     </main><footer className="workspace-footer">Đăng nhập để lưu ghi chú mới trên máy chủ và dùng trên nhiều thiết bị.</footer>
   </div>;
 }

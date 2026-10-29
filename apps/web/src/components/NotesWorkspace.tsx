@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X } from 'lucide-react';
+import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X, Star, Clock, CalendarDays, CheckCircle2, Settings, Info, LogOut, UserRound } from 'lucide-react';
 import { api as serverApi, ApiError } from '../api';
 import type { Label, Note, NoteDraft, NoteSort, NotesResponse } from '../types/notes';
 import { NoteEditor } from './NoteEditor';
@@ -9,22 +9,24 @@ import { localApi, GUEST_KEY } from '../localNotes';
 import { LabelManager, type LabelAction } from './LabelManager';
 import { NoteOrganization } from './NoteOrganization';
 import { NoteReminder, type ReminderChanges } from './NoteReminder';
-import { priority, taskState, taskLabel, formatDue, isCompleted } from '../reminders';
+import { priority, taskState, taskLabel, formatDue, isCompleted, inCategory, type NoteCategory } from '../reminders';
 import { useEntrance } from '../hooks/useEntrance';
 import { useCardLayout } from '../hooks/useCardLayout';
 import { ImportantBadge, LabelChip } from './LabelChip';
 
 interface Props {
   guest?: boolean;
+  onLogout?: () => void; onAccount?: () => void; preferenceKey?: string;
   onSessionExpired: () => void; onDirtyChange: (dirty: boolean) => void;
   authenticationRevision?: number; beforeLeaveRef?: MutableRefObject<(() => Promise<boolean>) | null>;
 }
 const PAGE_SIZE = 50;
 const messageOf = (error: unknown) => error instanceof Error ? error.message : 'Không tải được ghi chú. Vui lòng thử lại.';
-type Filters = { q: string; pinned: boolean; labelId: string; sort: NoteSort };
+type Filters = { q: string; pinned: boolean; labelId: string; sort: NoteSort; category?: NoteCategory };
 function matches(note: Note, filters: Filters) {
   const text = filters.q.toLowerCase();
   return (!filters.pinned || note.pinned)
+    && inCategory(note, filters.category)
     && (!filters.labelId || (note.labels ?? []).some(label => label.id === filters.labelId))
     && (!text || note.title.toLowerCase().includes(text) || note.content.toLowerCase().includes(text));
 }
@@ -57,10 +59,30 @@ function listUrl(filters: Filters, offset: number) {
   if (filters.pinned) params.set('pinned', 'true');
   if (filters.labelId) params.set('labelId', filters.labelId);
   if (filters.sort !== 'updated') params.set('sort', filters.sort);
+  if (filters.category && filters.category !== 'all') params.set('category', filters.category);
   return `/notes?${params}`;
 }
 
-export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, guest = false }: Props) {
+const categories = [
+  { id: 'all', title: 'Tất cả ghi chú', icon: StickyNote }, { id: 'important', title: 'Quan trọng', icon: Star },
+  { id: 'overdue', title: 'Quá hạn', icon: Clock }, { id: 'upcoming', title: 'Sắp đến hạn', icon: CalendarDays },
+  { id: 'daily', title: 'Hằng ngày', icon: CalendarDays }, { id: 'completed', title: 'Đã hoàn thành', icon: CheckCircle2 },
+] as const;
+function readPreferences(key: string) {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(key) ?? '{}');
+    return { density: stored.density === 'compact' ? 'compact' : 'comfortable', fontSize: [14,16,18].includes(stored.fontSize) ? stored.fontSize as number : 14 };
+  } catch { return { density: 'comfortable', fontSize: 14 }; }
+}
+export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, guest = false, onLogout, onAccount, preferenceKey = 'ghichu.display.guest' }: Props) {
+  const [panel, setPanel] = useState<'notes' | 'settings' | 'about'>('notes');
+  const [preferences, setPreferences] = useState(() => readPreferences(preferenceKey));
+  const [preferenceError, setPreferenceError] = useState('');
+  function updatePreferences(next: typeof preferences) {
+    setPreferences(next);
+    try { window.localStorage.setItem(preferenceKey, JSON.stringify(next)); setPreferenceError(''); }
+    catch { setPreferenceError('Tùy chọn đã áp dụng cho lần mở này; trình duyệt chưa cho phép lưu lại.'); }
+  }
   const api = guest ? localApi : serverApi;
   const { notesApi, labelsApi } = useMemo(() => createNoteServices(api), [api]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -80,7 +102,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [labelId, setLabelId] = useState('');
   const [sort, setSort] = useState<NoteSort>('updated');
-  const filters: Filters = { q: query, pinned: pinnedOnly, labelId, sort };
+  const [category, setCategory] = useState<NoteCategory>('all');
+  const categoryClock = ['overdue','upcoming','daily','completed'].includes(category) ? clock : 0;
+  const filters: Filters = { q: query, pinned: pinnedOnly, labelId, sort, category };
   const filtersRef = useRef(filters); filtersRef.current = filters;
   const [labels, setLabels] = useState<Label[]>([]);
   const [labelsError, setLabelsError] = useState('');
@@ -90,14 +114,15 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const labelManagerButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const [actionMessage, setActionMessage] = useState('');
-  const filtered = Boolean(query || pinnedOnly || labelId);
+  const filtered = Boolean(query || pinnedOnly || labelId || category !== 'all');
   const container = useRef<HTMLElement>(null);
   const visibleNotes = mergeNotes(filters, notes);
   const cardIds = visibleNotes.map(note => note.id).join('|');
-  useEntrance(container, '.note-card, .empty-notes', [loading, query, pinnedOnly, labelId, sort, cardIds]);
+  useEntrance(container, '.note-card, .empty-notes', [loading, query, pinnedOnly, labelId, sort, category, cardIds, panel]);
   const captureLayout = useCardLayout(container, view);
   function changeView(next: 'grid' | 'list') { if (next !== view) { captureLayout(); setView(next); } }
   useEntrance(container, '.organization-feedback', [actionMessage]);
+  useEntrance(container, '.workspace-panel', [panel]);
   useEntrance(container, '.reminder-notifications', [reminders.map(note => note.id).join('|')]);
   useEffect(() => {
     const timeout = setTimeout(() => setQuery(search.trim()), 250);
@@ -211,7 +236,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       })
       .finally(() => { if (!controller.signal.aborted && generation === listGeneration.current) setLoading(false); });
     return () => { controller.abort(); moreController.current?.abort(); };
-  }, [reload, onSessionExpired, authenticationRevision, query, pinnedOnly, labelId, sort]);
+  }, [reload, onSessionExpired, authenticationRevision, query, pinnedOnly, labelId, sort, category, categoryClock]);
 
   useEffect(() => () => { detailController.current?.abort(); detailGeneration.current++; }, []);
 
@@ -329,7 +354,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     });
   }
   function clearFilters() {
-    setSearch(''); setQuery(''); setPinnedOnly(false); setLabelId(''); searchInput.current?.focus();
+    setSearch(''); setQuery(''); setPinnedOnly(false); setLabelId(''); setCategory('all'); searchInput.current?.focus();
   }
   async function deleteNote() {
     if (navigating.current || !editor?.note) return;
@@ -372,7 +397,29 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     }
   }
 
-  return <section ref={container} className="notes-workspace" aria-label="Không gian ghi chú">
+  return <section ref={container} className={`notes-workspace has-sidebar density-${preferences.density}`} style={{ '--note-font-size': `${preferences.fontSize}px` } as React.CSSProperties} aria-label="Không gian ghi chú">
+    <aside className="workspace-sidebar" aria-label="Thanh công cụ ghi chú">
+      <div className="sidebar-heading"><StickyNote size={19} /><strong>Không gian của bạn</strong></div>
+      <div className="notes-search"><Search size={17} aria-hidden="true" /><label className="sr-only" htmlFor="notes-search">Tìm ghi chú</label>
+        <input ref={searchInput} type="search" id="notes-search" value={search} maxLength={200} autoComplete="off" placeholder="Tìm ghi chú…"
+          onChange={event => { setSearch(event.target.value); setPanel('notes'); }} />
+        {search && <button type="button" className="icon-button" aria-label="Xóa từ khóa tìm kiếm" onClick={() => { setSearch(''); setQuery(''); searchInput.current?.focus(); }}><X size={15} /></button>}
+      </div>
+      <nav className="sidebar-navigation" aria-label="Nhóm ghi chú">{categories.map(item => <button key={item.id} type="button"
+        className={`sidebar-item category-${item.id}`} aria-current={panel === 'notes' && category === item.id ? 'page' : undefined}
+        onClick={() => { setCategory(item.id); setPanel('notes'); }}><item.icon size={18} />{item.title}</button>)}</nav>
+      <div className="sidebar-labels"><label className="filter-select"><span>Lọc theo nhãn</span><select aria-label="Lọc theo nhãn" value={labelId} onChange={event => { setLabelId(event.target.value); setPanel('notes'); }}>
+        <option value="">Tất cả nhãn</option>{labels.map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
+        <button ref={labelManagerButton} type="button" className="sidebar-item" aria-expanded={showLabels} disabled={navigationBusy}
+          onClick={() => { setPanel('notes'); setShowLabels(value => !value); }}><Tag size={18} />Quản lý nhãn</button></div>
+      <nav className="sidebar-system" aria-label="Ứng dụng">
+        <button type="button" className="sidebar-item" aria-current={panel === 'settings' ? 'page' : undefined} onClick={() => setPanel('settings')}><Settings size={18} />Cài đặt</button>
+        <button type="button" className="sidebar-item" aria-current={panel === 'about' ? 'page' : undefined} onClick={() => setPanel('about')}><Info size={18} />Về ứng dụng</button>
+        {onLogout && <button type="button" className="sidebar-item sidebar-logout" onClick={onLogout}><LogOut size={18} />Đăng xuất</button>}
+        {onAccount && <button type="button" className="sidebar-item" onClick={onAccount}><UserRound size={18} />Mở tài khoản</button>}
+      </nav><p className="sidebar-storage">{guest ? 'Lưu trên trình duyệt này' : 'Lưu trên máy chủ'} · Tự lưu</p>
+    </aside>
+    <div className="workspace-content" hidden={panel !== 'notes'}>
     {reminderError && <p className="field-error">{reminderError}</p>}
     {reminders.length > 0 && <section className="reminder-notifications" aria-label="Thông báo nhắc việc" aria-live="polite">
       <h2>Cần bạn chú ý · {reminders.length}{reminders.length === 100 ? '+' : ''}</h2>
@@ -383,7 +430,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       </div>)}
     </section>}
     <div className="notes-toolbar">
-      <div><h2>Những điều muốn nhớ</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
+      <div><h2>{category === 'all' ? 'Những điều muốn nhớ' : categories.find(item => item.id === category)?.title}</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
       <div className="notes-actions">
         <div className="note-view-switch" role="group" aria-label="Kiểu hiển thị ghi chú">
           <button className="icon-button" type="button" aria-label="Xem dạng lưới" aria-pressed={view === 'grid'} onClick={() => changeView('grid')}><Grid2X2 size={17} /></button>
@@ -394,20 +441,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       </div>
     </div>
     {!editor && <button type="button" className="quick-note" onClick={() => void openNew()} disabled={navigationBusy}><Plus size={20} />Ghi lại điều gì đó…<span>Tự lưu</span></button>}
-    <div className="notes-search-row">
-      <div className="notes-search"><Search size={19} aria-hidden="true" /><label className="sr-only" htmlFor="notes-search">Tìm ghi chú</label>
-        <input ref={searchInput} type="search" id="notes-search" value={search} maxLength={200} autoComplete="off"
-          placeholder="Tìm theo tiêu đề hoặc nội dung…" onChange={event => setSearch(event.target.value)} />
-        {search && <button type="button" className="icon-button" aria-label="Xóa từ khóa tìm kiếm" onClick={() => { setSearch(''); setQuery(''); searchInput.current?.focus(); }}><X size={17} /></button>}
-      </div>
-      <button ref={labelManagerButton} type="button" className="quiet-button manage-labels-button" aria-expanded={showLabels}
-        disabled={navigationBusy} onClick={() => setShowLabels(value => !value)}><Tag size={17} />Quản lý nhãn</button>
-    </div>
     <div className="notes-filter-row">
       <button type="button" className={`quiet-button pin-filter ${pinnedOnly ? 'active' : ''}`} aria-pressed={pinnedOnly}
         onClick={() => setPinnedOnly(value => !value)}><Pin size={15} />Chỉ ghi chú đã ghim</button>
-      <label className="filter-select"><span>Nhãn</span><select aria-label="Lọc theo nhãn" value={labelId} onChange={event => setLabelId(event.target.value)}>
-        <option value="">Tất cả nhãn</option>{labels.map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
       <label className="filter-select sort-select"><span>Sắp xếp</span><select aria-label="Sắp xếp ghi chú" value={sort} onChange={event => setSort(event.target.value as NoteSort)}>
         <option value="updated">Vừa chỉnh sửa</option><option value="created">Mới tạo</option><option value="title">Tiêu đề A–Z</option></select></label>
       {(filtered || search) && <button type="button" className="quiet-button clear-filters" onClick={clearFilters}><X size={14} />Xóa bộ lọc</button>}
@@ -465,5 +501,21 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       {moreError && <p className="notice error" role="alert">{moreError}</p>}
       <button type="button" className="quiet-button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? 'Đang tải thêm…' : moreError ? 'Thử tải thêm' : 'Tải thêm ghi chú'}</button>
     </div>}
+    </div>
+    {panel === 'settings' && <section className="workspace-panel" aria-label="Cài đặt hiển thị"><h2>Cài đặt</h2><p>Mật độ và cỡ chữ được nhớ trên trình duyệt đang dùng. Kiểu xem áp dụng cho phiên hiện tại; lần mở mới mặc định là lưới.</p>
+      <label>Mật độ thẻ<select value={preferences.density} onChange={event => updatePreferences({ ...preferences, density: event.target.value })}><option value="comfortable">Thoáng, dễ đọc</option><option value="compact">Gọn, xem nhiều ghi chú</option></select></label>
+      <label>Cỡ chữ ghi chú<select value={preferences.fontSize} onChange={event => updatePreferences({ ...preferences, fontSize: Number(event.target.value) })}><option value={14}>Vừa · 14px</option><option value={16}>Lớn · 16px</option><option value={18}>Rất lớn · 18px</option></select></label>
+      <label>Kiểu xem<select value={view} onChange={event => setView(event.target.value as 'grid' | 'list')}><option value="grid">Lưới</option><option value="list">Danh sách</option></select></label>
+      <p>Tự lưu đang bật. Hiệu ứng tự giảm theo thiết lập giảm chuyển động của thiết bị.</p>
+      {preferenceError && <p role="alert">{preferenceError}</p>}
+      <button type="button" className="quiet-button" onClick={() => setPanel('notes')}>Quay lại ghi chú</button>
+    </section>}
+    {panel === 'about' && <section className="workspace-panel" aria-label="Về ứng dụng"><h2>Về ghi chú.</h2><p>Không gian cho ý tưởng, công việc và những điều muốn nhớ.</p>
+      <dl><dt>Ghi chú tài khoản</dt><dd>Tự lưu trên máy chủ và mở lại bằng cùng tài khoản trên thiết bị khác. Tài khoản chưa xác minh email vẫn dùng đầy đủ chức năng.</dd>
+        <dt>Ghi chú trên máy</dt><dd>Lưu trong trình duyệt này, tách riêng với dữ liệu tài khoản. Xóa dữ liệu trình duyệt sẽ xóa ghi chú cục bộ.</dd>
+        <dt>Nhắc việc</dt><dd>Vàng khi sắp hạn hoặc quan trọng; đỏ khi quá hạn. Thông báo trong ứng dụng cần trang đang mở.</dd>
+        <dt>Dự án</dt><dd>503073 · Web Programming &amp; Applications · Nguyễn Hải Triều và Thái.</dd></dl>
+      <button type="button" className="quiet-button" onClick={() => setPanel('notes')}>Quay lại ghi chú</button>
+    </section>}
   </section>;
 }

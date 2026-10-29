@@ -98,9 +98,10 @@ export function notesRouter(db: Database) {
   router.get('/', async (req, res) => {
     const limit = paginationNumber(req.query.limit, 50, 1, 100);
     const offset = paginationNumber(req.query.offset, 0, 0, 1000000);
-    const { q, pinned, labelId, sort = 'updated' } = req.query;
+    const { q, pinned, labelId, category = 'all', sort = 'updated' } = req.query;
     if (limit === undefined || offset === undefined
-      || Object.keys(req.query).some(key => !['limit', 'offset', 'q', 'pinned', 'labelId', 'sort'].includes(key))
+      || Object.keys(req.query).some(key => !['limit', 'offset', 'q', 'pinned', 'labelId', 'sort', 'category'].includes(key))
+      || typeof category !== 'string' || !['all','important','overdue','upcoming','daily','completed'].includes(category)
       || (q !== undefined && (typeof q !== 'string' || q.length > 200))
       || (pinned !== undefined && pinned !== 'true')
       || (labelId !== undefined && (typeof labelId !== 'string' || !UUID.test(labelId)))
@@ -115,6 +116,12 @@ export function notesRouter(db: Database) {
       where.push(`(strpos(lower(n.title), lower($${params.length}::text)) > 0 OR strpos(lower(n.content), lower($${params.length}::text)) > 0)`);
     }
     if (pinned === 'true') where.push('n.pinned = TRUE');
+    const categories: Record<string,string> = {
+      important: 'n.important = TRUE', overdue: `NOT ${DONE} AND n.due_at < NOW()`,
+      upcoming: `NOT ${DONE} AND n.due_at >= NOW() AND n.due_at <= NOW() + INTERVAL '24 hours'`,
+      daily: 'n.daily = TRUE', completed: DONE,
+    };
+    if (category !== 'all') where.push(`(${categories[category]})`);
     if (labelId !== undefined) {
       params.push(labelId);
       where.push(`EXISTS (SELECT 1 FROM note_labels f WHERE f.note_id = n.id AND f.owner_id = n.owner_id AND f.label_id = $${params.length})`);

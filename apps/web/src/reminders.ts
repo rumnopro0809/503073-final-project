@@ -25,3 +25,15 @@ export function taskLabel(note: Note, now = Date.now()) {
   return note.daily ? 'Hằng ngày' : '';
 }
 export const formatDue = (value: string) => new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+export type NoteCategory = 'all' | 'important' | 'overdue' | 'upcoming' | 'daily' | 'completed';
+export function inCategory(note: Note, category: NoteCategory = 'all', now = Date.now()) {
+  const due = note.dueAt ? Date.parse(note.dueAt) : Infinity;
+  switch (category) {
+    case 'important': return note.important;
+    case 'overdue': return !isCompleted(note,now) && due < now;
+    case 'upcoming': return !isCompleted(note,now) && due >= now && due <= now + 86400000;
+    case 'daily': return note.daily;
+    case 'completed': return isCompleted(note,now);
+    default: return true;
+  }
+}

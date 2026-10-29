@@ -55,6 +55,42 @@ beforeEach(() => {
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
 
+test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
+  mount();
+  const actor = user();
+  await actor.click(await screen.findByRole('button',{name:'Ghi chú mới'}));
+  await actor.type(titleInput(),'Bản nháp còn đây');
+  await actor.click(screen.getByRole('button',{name:'Cài đặt'}));
+  assert.ok(screen.getByRole('region',{name:'Cài đặt hiển thị'}));
+  await actor.selectOptions(screen.getByLabelText('Mật độ thẻ'),'compact');
+  await actor.selectOptions(screen.getByLabelText('Cỡ chữ ghi chú'),'16');
+  await actor.click(screen.getByRole('button',{name:'Về ứng dụng'}));
+  assert.ok(screen.getByRole('region',{name:'Về ứng dụng'}));
+  await actor.click(screen.getByRole('button',{name:'Quay lại ghi chú'}));
+  assert.equal(titleInput().value,'Bản nháp còn đây');
+  assert.equal(calls.filter(call=>call.method==='POST').length,0);
+  cleanup(); mount();
+  await actor.click(screen.getByRole('button',{name:'Cài đặt'}));
+  assert.equal(screen.getByLabelText<HTMLSelectElement>('Mật độ thẻ').value,'compact');
+  assert.equal(screen.getByLabelText<HTMLSelectElement>('Cỡ chữ ghi chú').value,'16');
+});
+
+test('sidebar category requests retain pagination filters and reset when returning to all notes', async () => {
+  respond = url => {
+    const parsed = new URL(url,'http://local');
+    if (parsed.searchParams.get('category') === 'important') return parsed.searchParams.get('offset') === '50'
+      ? json(page([{...noteB,important:true}],false,50)) : json(page([{...noteA,important:true}],true));
+    return json(page([noteA,noteB]));
+  };
+  mount(); const actor = user();
+  await actor.click(screen.getByRole('button',{name:'Quan trọng'}));
+  await actor.click(await screen.findByRole('button',{name:'Tải thêm ghi chú'}));
+  await screen.findByRole('button',{name:'Mở ghi chú Ghi chú B'});
+  assert.ok(calls.some(call=>call.url.includes('offset=50') && call.url.includes('category=important')));
+  await actor.click(screen.getByRole('button',{name:'Tất cả ghi chú'}));
+  await waitFor(()=>assert.ok(calls.at(-1)?.url.includes('offset=0') && !calls.at(-1)?.url.includes('category=')));
+});
+
 test('GSAP entrance preserves editor focus, does not replay while typing and cleans up on unmount', async () => {
   const { gsap } = await import('gsap');
   const originalMedia = window.matchMedia;
@@ -120,6 +156,8 @@ test('guest storage survives reopening, searches and keeps labels and reminders 
   assert.equal((await reopened.notesApi.read(note.id)).labels[0].name, 'Cá nhân');
   assert.equal((await request<NotesResponse>('/notes?q=riêng')).notes.length, 1);
   assert.equal((await request<{notes: Note[]}>('/notes/reminders')).notes[0].id, note.id);
+  assert.equal((await request<NotesResponse>('/notes?category=overdue')).notes.length,1);
+  assert.equal((await request<NotesResponse>('/notes?category=completed')).notes.length,0);
   await services.labelsApi.remove(label.id);
   const retained = await reopened.notesApi.read(note.id);
   assert.equal(retained.content, 'Nội dung riêng'); assert.deepEqual(retained.labels, []);
