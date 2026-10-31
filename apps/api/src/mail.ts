@@ -3,13 +3,17 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { config } from './config.js';
+import { traceMailjetDelivery } from './mailjetTrace.js';
 
 export type SendVerification = (email: string, activationUrl: string) => Promise<void>;
 
 async function sendAccountMail(email: string, subject: string, text: string) {
   if (config.mailTransport === 'disabled') throw new Error('Email delivery is not configured on this deployment.');
+  const mailjet = process.env.SMTP_HOST?.trim().toLowerCase() === 'in-v3.mailjet.com';
+  const traceId = mailjet ? randomUUID() : undefined;
   const message = {
     from: config.mailFrom, to: email, subject, text,
+    ...(traceId ? {headers:{'X-MJ-CustomID':traceId}} : {}),
   };
   if (config.mailTransport === 'file') {
     const transporter = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: 'unix' });
@@ -34,6 +38,11 @@ async function sendAccountMail(email: string, subject: string, text: string) {
       (typeof recipient === 'string' ? recipient : recipient.address ?? '').toLowerCase() === email.toLowerCase());
     if (!accepted) throw Object.assign(new Error('SMTP did not accept the recipient.'), {code:'ERECIPIENT'});
     console.info('SMTP_ACCEPTED: recipient accepted by relay; inbox delivery is not yet confirmed.');
+    if (traceId) {
+      console.info('MAILJET_SUBMITTED', {traceId});
+      // Allow time for indexing. This lookup cannot turn an accepted send into a failure.
+      setTimeout(() => {void traceMailjetDelivery(traceId);}, 15_000).unref();
+    }
   } catch (failure) {
     const error = failure as {code?: unknown; responseCode?: unknown};
     // Never log SMTP credentials, reset/activation URLs, recipient addresses or raw server responses.

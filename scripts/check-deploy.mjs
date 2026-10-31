@@ -12,6 +12,8 @@ const rejected=run({MAIL_TRANSPORT:'smtp',SMTP_HOST:'smtp.example.test'},"const 
 assert.equal(rejected.status,0);assert.match(rejected.stderr,/ERECIPIENT/);assert.doesNotMatch(rejected.stderr,/test@example/);
 const failed=run({MAIL_TRANSPORT:'smtp',SMTP_HOST:'smtp.example.test'},"const mailer=(await import('nodemailer')).default;mailer.createTransport=()=>({sendMail:async()=>{throw Object.assign(new Error('PRIVATE_SECRET'),{code:'EAUTH',responseCode:535});}});const {sendVerification}=await import('./build/api/mail.js');try{await sendVerification('test@example.test','https://notes.example.test');process.exitCode=1;}catch{process.exitCode=0;}");
 assert.equal(failed.status,0);assert.match(failed.stderr,/EAUTH/);assert.doesNotMatch(failed.stderr,/PRIVATE_SECRET/);
+const traced=run({SMTP_USER:'PRIVATE_USER',SMTP_PASS:'PRIVATE_SECRET'},"import assert from 'node:assert/strict';globalThis.fetch=async(url,options)=>{assert.match(url,/CustomID=trace-test/);assert.match(options.headers.Authorization,/^Basic /);return {ok:true,json:async()=>({Data:[{Status:'blocked',Recipient:'PRIVATE_RECIPIENT'}]})};};const {traceMailjetDelivery}=await import('./build/api/mailjetTrace.js');await traceMailjetDelivery('trace-test');");
+assert.equal(traced.status,0,traced.stderr);assert.match(traced.stdout,/blocked/);assert.doesNotMatch(traced.stdout+traced.stderr,/PRIVATE_USER|PRIVATE_SECRET|PRIVATE_RECIPIENT/);
 assert.equal(fs.existsSync('build/web/robots.txt'),true);
 assert.equal(fs.existsSync('build/web/rubric-preview.htm'),false);
 assert.equal(fs.existsSync('build/web/rubric-preview_files'),false);
