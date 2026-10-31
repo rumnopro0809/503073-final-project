@@ -12,6 +12,7 @@ export interface NoteEditorProps {
   saveError?: string;
   fieldErrors?: Partial<Record<keyof NoteDraft, string>>;
   disabled?: boolean;
+  readOnly?: boolean;
   onRetry?: () => void;
   onDelete?: () => void;
   organization?: ReactNode;
@@ -23,7 +24,7 @@ const statusLabels: Record<NoteSaveStatus, string> = {
 };
 
 // A controlled form: persistence belongs to the autosave hook that consumes onChange.
-export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, onRetry, onDelete, organization }: NoteEditorProps) {
+export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, readOnly=false, onRetry, onDelete, organization }: NoteEditorProps) {
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
   const container = useRef<HTMLElement>(null);
@@ -37,13 +38,13 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
     <div className="note-editor-fields">
       <label htmlFor={`${id}-title`}>Tiêu đề</label>
       <input ref={titleInput} id={`${id}-title`} name="title" value={draft.title} maxLength={200} required disabled={disabled}
-        placeholder="Đặt tên cho ý tưởng này…" aria-invalid={Boolean(fieldErrors?.title)}
+        readOnly={readOnly} placeholder="Đặt tên cho ý tưởng này…" aria-invalid={Boolean(fieldErrors?.title)}
         aria-describedby={fieldErrors?.title ? `${id}-title-error` : undefined}
         onChange={event => onChange({ ...draft, title: event.target.value })} />
       {fieldErrors?.title && <p id={`${id}-title-error`} className="field-error">{fieldErrors.title}</p>}
       <label htmlFor={`${id}-content`}>Nội dung</label>
       <textarea id={`${id}-content`} name="content" value={draft.content} maxLength={100000} rows={10} required disabled={disabled}
-        placeholder="Viết xuống những điều bạn muốn nhớ…" aria-invalid={Boolean(fieldErrors?.content)}
+        readOnly={readOnly} placeholder="Viết xuống những điều bạn muốn nhớ…" aria-invalid={Boolean(fieldErrors?.content)}
         aria-describedby={fieldErrors?.content ? `${id}-content-error` : undefined}
         onChange={event => onChange({ ...draft, content: event.target.value })} />
       {fieldErrors?.content && <p id={`${id}-content-error`} className="field-error">{fieldErrors.content}</p>}

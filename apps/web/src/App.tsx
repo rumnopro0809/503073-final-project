@@ -5,6 +5,8 @@ import { api, ApiError, type User } from './api';
 import { NotesWorkspace } from './components/NotesWorkspace';
 import { useEntrance } from './hooks/useEntrance';
 import { WelcomePage } from './components/WelcomePage';
+import { PasswordRecovery } from './components/PasswordRecovery';
+import { ProfilePanel } from './components/ProfilePanel';
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>ghi chú<span className="brand-dot">.</span></span></div>;
@@ -117,6 +119,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
         </form>
         {!reauthEmail && <p className="account-prompt">{register ? 'Đã có một góc riêng?' : 'Bạn chưa có tài khoản?'} <Link to={register ? '/login' : '/register'}>{register ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={13} /></Link></p>}
         {!reauthEmail && <Link className="guest-entry" to="/guest">Dùng không cần tài khoản <ArrowRight size={16} /><small>Ghi chú chỉ lưu trong trình duyệt này</small></Link>}
+        {!register && <Link className="welcome-backlink" to="/forgot-password">Quên mật khẩu?</Link>}
         {!reauthEmail && <Link className="welcome-backlink" to="/welcome">Khám phá ghi chú.</Link>}
         <div className="form-assurance"><ShieldCheck size={15} /><span>Không gian của bạn, chỉ bạn mới có thể truy cập.</span></div>
       </div>
@@ -125,10 +128,12 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
   </main>;
 }
 
-function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRevision }: {
+function Home({ user, onUserChange, onLogout, onSessionExpired, emailFailed, authenticationRevision }: {
+  onUserChange: (user: User) => void;
   user: User; onLogout: () => void; onSessionExpired: () => void; emailFailed: boolean; authenticationRevision: number;
 }) {
   const [draftDirty, setDraftDirty] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const beforeLeaveRef = useRef<(() => Promise<boolean>) | null>(null);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
@@ -153,8 +158,9 @@ function Home({ user, onLogout, onSessionExpired, emailFailed, authenticationRev
     finally { setResending(false); }
   }
   return <div className="workspace">
-    <header className="workspace-header"><Brand /><div className="account-bar"><span className="avatar">{user.displayName.slice(0, 1).toLocaleUpperCase('vi')}</span><span className="account-name">{user.displayName}</span>{busy && <span>Đang đăng xuất…</span>}</div></header>
+    <header className="workspace-header"><Brand /><div className="account-bar"><button type="button" className="quiet-button profile-trigger" onClick={() => setShowProfile(value => !value)} aria-expanded={showProfile} aria-label="Mở hồ sơ tài khoản">{user.avatarUrl ? <img className="avatar" src={user.avatarUrl} alt="" /> : <span className="avatar">{user.displayName.slice(0, 1).toLocaleUpperCase('vi')}</span>}<span className="account-name">{user.displayName}</span></button>{busy && <span>Đang đăng xuất…</span>}</div></header>
     <main className="workspace-main">
+      {showProfile && <ProfilePanel user={user} onUserChange={onUserChange} onClose={() => setShowProfile(false)} onSignedOut={onLogout} beforePasswordChange={async () => beforeLeaveRef.current ? beforeLeaveRef.current() : true} />}
       {!user.emailVerified && <div className="verification-banner"><Mail size={21} /><div><strong>Tài khoản của bạn chưa được xác minh</strong><p>{emailFailed ? 'Chưa gửi được email xác minh. Bạn có thể yêu cầu gửi lại.' : <>Kiểm tra hộp thư <b>{user.email}</b> và mở liên kết xác minh. Bạn vẫn có thể sử dụng ứng dụng.</>}</p></div><button className="text-button" onClick={resend} disabled={resending}>{resending ? 'Đang gửi…' : 'Gửi lại email'}</button></div>}
       {user.emailVerified && new URLSearchParams(location.search).get('verification') === 'success' && <div className="notice success" role="status"><CheckCircle2 size={18} /> Email đã được xác minh thành công.</div>}
       {new URLSearchParams(location.search).get('verification') === 'invalid' && <div className="notice error" role="alert">Liên kết xác minh không hợp lệ hoặc đã hết hạn. Nếu tài khoản chưa được xác minh, bạn có thể yêu cầu gửi lại email.</div>}
@@ -214,6 +220,7 @@ export function App() {
     return () => window.removeEventListener('focus', onFocus);
   }, [user?.id]);
   if (location.pathname === '/welcome') return <WelcomePage />;
+  if (location.pathname === '/forgot-password' || location.pathname === '/reset-password') return <PasswordRecovery key={location.pathname} reset={location.pathname === '/reset-password'} onReset={clearSession} />;
   if (location.pathname === '/guest') return <GuestHome signedIn={Boolean(user)} />;
   if (loading || connectionError) return <main className="loading-screen"><Brand />{loading ? <><LoaderCircle className="spin" /><p>Đang mở không gian của bạn…</p></> : <><p role="alert">{connectionError}</p><button className="primary-button" onClick={() => { setLoading(true); setConnectionError(''); void refresh(true); }}>Thử kết nối lại <ArrowRight size={16} /></button></>}<Link className="guest-entry" to="/guest">Dùng ghi chú trên máy</Link></main>;
   const onAuthenticated = (next: User, delivery?: string) => {
@@ -222,7 +229,7 @@ export function App() {
   return <><div hidden={sessionExpired}><Routes>
     <Route path="/login" element={user ? <Navigate to={`/${window.location.search}`} replace /> : <AuthPage key="login" mode="login" onAuthenticated={onAuthenticated} />} />
     <Route path="/register" element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={onAuthenticated} />} />
-    <Route path="/" element={user ? <Home key={user.id} user={user} emailFailed={emailFailed} onLogout={clearSession}
+    <Route path="/" element={user ? <Home key={user.id} user={user} onUserChange={setUser} emailFailed={emailFailed} onLogout={clearSession}
       onSessionExpired={requireAuthentication} authenticationRevision={authenticationRevision} /> : <GuestHome />} />
     <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
   </Routes></div>{sessionExpired && user && <AuthPage key="reauthenticate" mode="login" reauthEmail={user.email} onAuthenticated={onAuthenticated} />}</>;

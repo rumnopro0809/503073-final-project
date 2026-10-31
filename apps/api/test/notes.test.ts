@@ -86,6 +86,59 @@ test('pins order by pin time, survive content edits, and can be removed', async 
   assert.equal(unpinned.body.note.pinnedAt, null);
 });
 
+test('pin chronology beats urgency, sorting and pagination in every list mode', async () => {
+  const old = await createNote(alice,{title:'A old pin',content:'first'});
+  const recent = await createNote(alice,{title:'Z new pin',content:'second'});
+  const urgent = await createNote(alice,{title:'Urgent unpinned',content:'third'});
+  for(const note of [old,recent]) await request(app).patch(`/api/notes/${note.id}/organization`).set(headers).set('Cookie',alice).send({version:1,pinned:true}).expect(200);
+  await db.query("UPDATE notes SET pinned_at=NOW()-INTERVAL '1 day',due_at=NOW()-INTERVAL '2 days',important=TRUE WHERE id=$1",[old.id]);
+  await db.query("UPDATE notes SET due_at=NOW()-INTERVAL '3 days',important=TRUE WHERE id=$1",[urgent.id]);
+  for(const sort of ['created','updated','title']) {
+    const list=await request(app).get('/api/notes').query({sort}).set('Cookie',alice).expect(200);
+    assert.deepEqual(list.body.notes.map((note:{id:string})=>note.id),[recent.id,old.id,urgent.id]);
+    const second=await request(app).get('/api/notes').query({sort,limit:1,offset:1}).set('Cookie',alice).expect(200);
+    assert.equal(second.body.notes[0].id,old.id);
+  }
+});
+
+test('attachments enforce ownership on upload, list, download and removal, and cascade with notes', async () => {
+  const note=await createNote();
+  const url=`/api/attachments/notes/${note.id}`;
+  const data=Buffer.from('Nội dung tệp bài tập').toString('base64');
+  await request(app).post(url).set(headers).send({name:'bài tập.txt',data}).expect(401);
+  await request(app).post(url).set(headers).set('Cookie',bob).send({name:'bài tập.txt',data}).expect(404);
+  const file=(await request(app).post(url).set(headers).set('Cookie',alice).send({name:'bài tập.txt',data,mediaType:'image/png'}).expect(201)).body.attachment;
+  assert.equal(file.mediaType,'application/octet-stream');
+  assert.equal((await request(app).get(url).set('Cookie',alice)).body.attachments[0].id,file.id);
+  await request(app).get(url).set('Cookie',bob).expect(404);
+  await request(app).get(file.url).set('Cookie',bob).expect(404);
+  await request(app).get(file.url).expect(401);
+  const downloaded=await request(app).get(file.url).set('Cookie',alice).expect(200);
+  assert.deepEqual(downloaded.body,Buffer.from(data,'base64')); assert.match(downloaded.headers['content-disposition'],/^attachment;/);
+  await request(app).delete(file.url).set(headers).set('Cookie',bob).send({}).expect(404);
+  await request(app).delete(file.url).set(headers).set('Cookie',alice).send({}).expect(204);
+  await request(app).get(file.url).set('Cookie',alice).expect(404);
+  const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  const image=(await request(app).post(url).set(headers).set('Cookie',alice).send({name:'ảnh.png',data:png}).expect(201)).body.attachment;
+  const inline=await request(app).get(image.url).set('Cookie',alice).expect(200);
+  assert.match(inline.headers['content-type'],/image\/png/); assert.match(inline.headers['content-disposition'],/^inline;/);
+  assert.match((await request(app).get(`${image.url}?download=1`).set('Cookie',alice)).headers['content-disposition'],/^attachment;/);
+  await request(app).delete(`/api/notes/${note.id}`).set(headers).set('Cookie',alice).send({}).expect(204);
+  await request(app).get(image.url).set('Cookie',alice).expect(404);
+  assert.equal((await db.query('SELECT id FROM attachments')).rows.length,0);
+});
+
+test('attachments reject malformed names, data, large files and concurrent quota overflow', async () => {
+  const note=await createNote(); const url=`/api/attachments/notes/${note.id}`;
+  for(const body of [{name:'../bad.txt',data:'YQ=='},{name:'bad\r\n.txt',data:'YQ=='},{name:'empty.txt',data:''},{name:'bad.txt',data:'not base64'},{name:'large.txt',data:Buffer.alloc(10*1024*1024+1).toString('base64')}])
+    await request(app).post(url).set(headers).set('Cookie',alice).send(body).expect(422);
+  const responses=await Promise.all(Array.from({length:21},(_,i)=>request(app).post(url).set(headers).set('Cookie',alice).send({name:`file${i}.txt`,data:'YQ=='})));
+  assert.equal(responses.filter(result=>result.status===201).length,20); assert.equal(responses.filter(result=>result.status===422).length,1);
+  const script=(await createNote()).id;
+  const safe=(await request(app).post(`/api/attachments/notes/${script}`).set(headers).set('Cookie',alice).send({name:'unsafe.svg',data:Buffer.from('<svg onload="alert(1)"></svg>').toString('base64')}).expect(201)).body.attachment;
+  assert.equal(safe.mediaType,'application/octet-stream');
+});
+
 test('organization rejects malformed filters and labels and preserves data across migrations', async () => {
   for (const query of [{ q: 'x'.repeat(201) }, { pinned: 'false' }, { labelId: 'bad' }, { sort: 'sql' }])
     await request(app).get('/api/notes').query(query).set('Cookie', alice).expect(422);
@@ -95,6 +148,74 @@ test('organization rejects malformed filters and labels and preserves data acros
   const note = await createNote();
   await migrate(db);
   assert.equal((await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note.content, note.content);
+});
+
+test('protected notes redact lists and searches and require a per-session password for every resource', async () => {
+  const note=await createNote(alice,{title:'Private title',content:'Secret content'});
+  const file=(await request(app).post(`/api/attachments/notes/${note.id}`).set(headers).set('Cookie',alice).send({name:'private.txt',data:'YQ=='}).expect(201)).body.attachment;
+  const password='A private note 2026!';
+  const set=await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:1,password,confirmPassword:password}).expect(200);
+  assert.equal(set.body.note.protected,true);assert.equal(set.body.note.locked,false);assert.equal(set.body.note.version,2);
+  const hash=(await db.query('SELECT password_hash FROM notes WHERE id=$1',[note.id])).rows[0].password_hash;
+  assert.notEqual(hash,password);
+  await request(app).post(`/api/notes/${note.id}/lock`).set(headers).set('Cookie',alice).send({}).expect(204);
+  const listed=(await request(app).get('/api/notes').set('Cookie',alice)).body.notes[0];
+  assert.equal(listed.locked,true);assert.equal(listed.title,'Ghi chú được bảo vệ');assert.equal(listed.content,'');assert.equal(listed.password_hash,undefined);
+  assert.equal((await request(app).get('/api/notes?q=Secret').set('Cookie',alice)).body.notes.length,0);
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',alice).expect(423);
+  await request(app).patch(`/api/notes/${note.id}`).set(headers).set('Cookie',alice).send({version:2,content:'overwrite'}).expect(423);
+  await request(app).delete(`/api/notes/${note.id}`).set(headers).set('Cookie',alice).send({}).expect(423);
+  await request(app).get(file.url).set('Cookie',alice).expect(423);
+  await request(app).get(`/api/attachments/notes/${note.id}`).set('Cookie',alice).expect(423);
+  await request(app).post(`/api/notes/${note.id}/unlock`).set(headers).set('Cookie',alice).send({password:'wrong'}).expect(422);
+  await request(app).post(`/api/notes/${note.id}/unlock`).set(headers).set('Cookie',bob).send({password}).expect(404);
+  await request(app).post(`/api/notes/${note.id}/unlock`).set(headers).set('Cookie',alice).send({password}).expect(200);
+  await request(app).get(file.url).set('Cookie',alice).expect(200);
+  await db.query("UPDATE note_unlocks SET expires_at=NOW()-INTERVAL '1 second'");
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',alice).expect(423);
+});
+
+test('changing or disabling note protection needs the current password and revokes other unlocks', async () => {
+  const note=await createNote();const password='Note password 2026!',next='New note password 2026!';
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:1,password,confirmPassword:'wrong'}).expect(422);
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:1,password,confirmPassword:password}).expect(200);
+  const login=await request(app).post('/api/auth/login').set(headers).send({email:'alice@example.test',password:'Test password 2026!'}).expect(200);
+  const second=(login.headers['set-cookie'] as unknown as string[])[0].split(';')[0];
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',second).expect(423);
+  await request(app).post(`/api/notes/${note.id}/unlock`).set(headers).set('Cookie',second).send({password}).expect(200);
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:2,password:next,confirmPassword:next,currentPassword:'wrong'}).expect(422);
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:2,password:next,confirmPassword:next,currentPassword:password}).expect(200);
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',second).expect(423);
+  await request(app).post(`/api/notes/${note.id}/unlock`).set(headers).set('Cookie',second).send({password}).expect(422);
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:3,password:null}).expect(422);
+  await request(app).post(`/api/notes/${note.id}/protection`).set(headers).set('Cookie',alice).send({version:3,password:null,currentPassword:next}).expect(200);
+  assert.equal((await request(app).get(`/api/notes/${note.id}`).set('Cookie',second).expect(200)).body.note.protected,undefined);
+});
+
+test('sharing grants read or edit only, not ownership, and revocation blocks all subsequent access', async () => {
+  const note=await createNote();
+  const share=(body:object)=>request(app).post(`/api/notes/${note.id}/shares`).set(headers).set('Cookie',alice).send(body);
+  await share({emails:['bob@example.test','missing@example.test'],permission:'write'}).expect(422);
+  assert.equal((await db.query('SELECT * FROM note_shares')).rows.length,0);
+  await share({emails:['bob@example.test'],permission:'read'}).expect(200);
+  assert.equal((await request(app).get('/api/notes/shared-notifications').set('Cookie',bob)).body.count,1);
+  const received=(await request(app).get('/api/notes?shared=true').set('Cookie',bob).expect(200)).body.notes;
+  assert.equal(received.length,1);assert.equal(received[0].share.permission,'read');assert.equal(received[0].share.ownerName,'alice');
+  assert.equal((await request(app).get('/api/notes').set('Cookie',bob)).body.notes.length,0);
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',bob).expect(200);
+  await request(app).patch(`/api/notes/${note.id}`).set(headers).set('Cookie',bob).send({version:1,content:'Not allowed'}).expect(404);
+  await request(app).delete(`/api/notes/${note.id}`).set(headers).set('Cookie',bob).send({}).expect(404);
+  await request(app).post(`/api/notes/${note.id}/shares`).set(headers).set('Cookie',bob).send({emails:['alice@example.test'],permission:'write'}).expect(404);
+  await share({emails:['bob@example.test'],permission:'write'}).expect(200);
+  await request(app).patch(`/api/notes/${note.id}`).set(headers).set('Cookie',bob).send({version:1,content:'Shared edit'}).expect(200);
+  await request(app).patch(`/api/notes/${note.id}`).set(headers).set('Cookie',alice).send({version:1,content:'Stale owner edit'}).expect(409);
+  const file=(await request(app).post(`/api/attachments/notes/${note.id}`).set(headers).set('Cookie',bob).send({name:'shared.txt',data:'YQ=='}).expect(201)).body.attachment;
+  await request(app).get(file.url).set('Cookie',bob).expect(200);
+  await request(app).delete(`/api/notes/${note.id}/shares/${bobId}`).set(headers).set('Cookie',alice).send({}).expect(204);
+  await request(app).get(`/api/notes/${note.id}`).set('Cookie',bob).expect(404);
+  await request(app).get(file.url).set('Cookie',bob).expect(404);
+  await request(app).patch(`/api/notes/${note.id}`).set(headers).set('Cookie',bob).send({version:2,content:'Revoked edit'}).expect(404);
+  assert.equal((await request(app).get('/api/notes?shared=true').set('Cookie',bob)).body.notes.length,0);
 });
 
 test('every notes endpoint requires an authenticated session', async () => {
@@ -126,14 +247,14 @@ test('sidebar categories filter before pagination and remain scoped to the accou
   assert.equal((await request(app).get('/api/notes?category=completed').set('Cookie',alice)).body.notes[0].id,a.id);
 });
 
-test('reminders prioritize urgent notes before pins, persist completion and enforce ownership', async () => {
+test('pins stay above urgent reminders, completion persists and ownership is enforced', async () => {
   const pinned = await createNote(alice, { title: 'Pinned', content: 'later' });
   await request(app).patch(`/api/notes/${pinned.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true }).expect(200);
   const urgent = await createNote(alice, { title: 'Urgent', content: 'do it' });
   const past = new Date(Date.now() - 60000).toISOString();
   const update = await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, dueAt: past, important: true }).expect(200);
   assert.equal(update.body.note.dueAt, past); assert.equal(update.body.note.important, true);
-  assert.equal((await request(app).get('/api/notes').set('Cookie', alice)).body.notes[0].id, urgent.id);
+  assert.equal((await request(app).get('/api/notes').set('Cookie', alice)).body.notes[0].id, pinned.id);
   assert.equal((await request(app).get('/api/notes/reminders').set('Cookie', alice)).body.notes[0].id, urgent.id);
   assert.deepEqual((await request(app).get('/api/notes/reminders').set('Cookie', bob)).body.notes, []);
   await request(app).get('/api/notes/reminders').expect(401);
@@ -397,6 +518,9 @@ test('expired and logged-out sessions cannot access notes', async () => {
 
 test('the notes schema can be added to an account database without losing accounts', async () => {
   // This database is the isolated in-memory test database, not .data/postgres.
+  await db.query('DROP TABLE note_unlocks');
+  await db.query('DROP TABLE note_shares');
+  await db.query('DROP TABLE attachments');
   await db.query('DROP TABLE note_labels');
   await db.query('DROP TABLE notes');
   const before = (await db.query('SELECT id FROM users ORDER BY id')).rows;

@@ -19,6 +19,9 @@ export interface Note {
   labels: Label[];
   createdAt: string;
   updatedAt: string;
+  protected?: boolean;
+  locked?: boolean;
+  share?: {permission:'read'|'write';ownerName:string;sharedAt:string};
 }
 
 export type NoteSort = 'updated' | 'created' | 'title';

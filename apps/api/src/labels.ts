@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import type { Database } from './database.js';
 import { findSessionUser } from './session.js';
+import { unlockedIds } from './noteAccess.js';
 
 const colors = ['#8b6bb1', '#3c8270', '#b47c35', '#b75d78', '#527db5', '#737784'];
 const missing = { message: 'Không tìm thấy nhãn.' };
@@ -36,6 +37,10 @@ export function labelsRouter(db: Database) {
             return (await sql.query('INSERT INTO labels(id, owner_id, name, color) VALUES ($1,$2,$3,$4) RETURNING id, name, color',
               [randomUUID(), res.locals.ownerId, (input.name as string).trim(), input.color ?? colors[0]])).rows[0];
           }
+          const unlocked=await unlockedIds(sql,req);
+          const locked=await sql.query(`SELECT n.id FROM notes n JOIN note_labels l ON l.note_id=n.id
+            WHERE l.label_id=$1 AND n.owner_id=$2 AND n.password_hash IS NOT NULL AND NOT(n.id=ANY($3::uuid[])) LIMIT 1`,[(req.params as { id: string }).id,res.locals.ownerId,[...unlocked]]);
+          if(locked.rows.length) throw Object.assign(new Error('Mở khóa các ghi chú dùng nhãn này trước khi sửa nhãn.'),{status:423});
           const { rows } = await sql.query('UPDATE labels SET name = COALESCE($1,name), color = COALESCE($2,color) WHERE id=$3 AND owner_id=$4 RETURNING id,name,color',
             [typeof input.name === 'string' ? input.name.trim() : null, input.color ?? null, (req.params as { id: string }).id, res.locals.ownerId]);
           if (!rows.length) return undefined;
@@ -46,12 +51,17 @@ export function labelsRouter(db: Database) {
         if (!label) { res.status(404).json(missing); return; }
         res.status(editing ? 200 : 201).json({ label });
       } catch (error) {
+        if((error as {status?:number}).status===423){res.status(423).json({message:(error as Error).message});return;}
         if ((error as { code?: string }).code === '23505') { res.status(409).json({ message: 'Bạn đã có nhãn với tên này.' }); return; }
         throw error;
       }
     });
   }
   router.delete('/:id', async (req, res) => {
+    const unlocked=await unlockedIds(db,req);
+    const locked=await db.query(`SELECT n.id FROM notes n JOIN note_labels l ON l.note_id=n.id
+      WHERE l.label_id=$1 AND n.owner_id=$2 AND n.password_hash IS NOT NULL AND NOT(n.id=ANY($3::uuid[])) LIMIT 1`,[(req.params as { id: string }).id,res.locals.ownerId,[...unlocked]]);
+    if(locked.rows.length){res.status(423).json({message:'Mở khóa các ghi chú dùng nhãn này trước khi xóa nhãn.'});return;}
     const deleted = await db.transaction(async sql => {
       const own = await sql.query('SELECT id FROM labels WHERE id=$1 AND owner_id=$2 FOR UPDATE', [(req.params as { id: string }).id, res.locals.ownerId]);
       if (!own.rows.length) return false;

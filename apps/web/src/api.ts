@@ -1,4 +1,4 @@
-export interface User { id: string; email: string; displayName: string; emailVerified: boolean; }
+export interface User { id: string; email: string; displayName: string; emailVerified: boolean; avatarUrl?: string | null; }
 export class ApiError extends Error {
   constructor(message: string, public status: number, public fields: Record<string, string> = {}) { super(message); }
 }

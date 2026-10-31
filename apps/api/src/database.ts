@@ -52,6 +52,14 @@ export async function migrate(db: Database) {
       token_hash CHAR(64) PRIMARY KEY, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
+    await sql.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data BYTEA');
+    await sql.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type VARCHAR(32)');
+    await sql.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_version INTEGER NOT NULL DEFAULT 1');
+    await sql.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}'::jsonb");
+    await sql.query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_hash CHAR(64) PRIMARY KEY, user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL
+    )`);
     await sql.query(`CREATE TABLE IF NOT EXISTS verification_tokens (
       token_hash CHAR(64) PRIMARY KEY, user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
       expires_at TIMESTAMPTZ NOT NULL
@@ -77,6 +85,22 @@ export async function migrate(db: Database) {
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS daily BOOLEAN NOT NULL DEFAULT FALSE');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS password_hash TEXT');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS protection_version INTEGER NOT NULL DEFAULT 1');
+    await sql.query(`CREATE TABLE IF NOT EXISTS note_unlocks (
+      note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      session_hash CHAR(64) NOT NULL REFERENCES sessions(token_hash) ON DELETE CASCADE,
+      protection_version INTEGER NOT NULL, expires_at TIMESTAMPTZ NOT NULL,
+      PRIMARY KEY(note_id,session_hash)
+    )`);
+    await sql.query(`CREATE TABLE IF NOT EXISTS note_shares (
+      note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      permission VARCHAR(5) NOT NULL CHECK(permission IN ('read','write')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), seen_at TIMESTAMPTZ,
+      PRIMARY KEY(note_id,recipient_id)
+    )`);
+    await sql.query('CREATE INDEX IF NOT EXISTS note_shares_recipient_idx ON note_shares(recipient_id)');
     await sql.query('UPDATE notes SET pinned_at = updated_at WHERE pinned AND pinned_at IS NULL');
     await sql.query('CREATE UNIQUE INDEX IF NOT EXISTS notes_id_owner_idx ON notes(id, owner_id)');
     await sql.query(`CREATE INDEX IF NOT EXISTS notes_owner_pinned_updated_idx
@@ -99,7 +123,17 @@ export async function migrate(db: Database) {
       FOREIGN KEY(label_id, owner_id) REFERENCES labels(id, owner_id) ON DELETE CASCADE
     )`);
     await sql.query('CREATE INDEX IF NOT EXISTS note_labels_owner_label_idx ON note_labels(owner_id, label_id, note_id)');
+    await sql.query(`CREATE TABLE IF NOT EXISTS attachments (
+      id UUID PRIMARY KEY, note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(180) NOT NULL, media_type VARCHAR(80) NOT NULL,
+      size INTEGER NOT NULL CHECK(size BETWEEN 1 AND 10485760), data BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      FOREIGN KEY(note_id,owner_id) REFERENCES notes(id,owner_id) ON DELETE CASCADE
+    )`);
+    await sql.query('CREATE INDEX IF NOT EXISTS attachments_note_idx ON attachments(note_id)');
     await sql.query('DELETE FROM sessions WHERE expires_at <= NOW()');
     await sql.query('DELETE FROM verification_tokens WHERE expires_at <= NOW()');
+    await sql.query('DELETE FROM password_reset_tokens WHERE expires_at <= NOW()');
   });
 }

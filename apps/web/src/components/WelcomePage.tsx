@@ -28,13 +28,13 @@ function Island({ scene, x = 220, y = 180 }: { scene: number; x?: number; y?: nu
       <path d="M0 -9 145 -47 206 41 60 81Z" fill="#fffdf7" />
       <path d="M145 -47 153 -18 175 -27Z" fill="#e7dece" />
       <g transform="translate(36 8) rotate(-14)">
-        <text fontSize="15" fontFamily="sans-serif" fill="#44364f" fontWeight="bold">{['Ý tưởng nhỏ','Hôm nay','Học tập','Nhớ nhé','Góc của mình'][scene]}</text>
-        <text y="24" fontSize="11" fontFamily="sans-serif" fill="#6f617a">{['Một ngày rõ ràng hơn','Ghi lại điều vừa nghĩ','Project cuối kỳ','Nộp bản demo','Viết xuống, nhẹ đầu'][scene]}</text>
+        <text fontSize="15" fontFamily="'Be Vietnam Pro', sans-serif" fill="#44364f" fontWeight="bold">{['Ý tưởng nhỏ','Hôm nay','Học tập','Nhớ nhé','Góc của mình'][scene]}</text>
+        <text y="24" fontSize="11" fontFamily="'Be Vietnam Pro', sans-serif" fill="#6f617a">{['Một ngày rõ ràng hơn','Ghi lại điều vừa nghĩ','Project cuối kỳ','Nộp bản demo','Viết xuống, nhẹ đầu'][scene]}</text>
       </g>
     </g>
     {scene === 0 && <g transform="translate(65 -80)"><path d="M-28 -8 Q-60 -80 0 -86 Q61 -80 29 -8 L17 11 -16 11Z" fill="#f1d68a" /><path d="M-16 12 H18 V29 H-16Z" fill="#786489" /><path d="M-9 31 H10" stroke="#59436d" strokeWidth="7" /><path d="M-60 -66 -75 -78 M62 -64 78 -75 M0 -106 V-124" stroke="#d9b45c" strokeWidth="5" strokeLinecap="round" /></g>}
     {scene === 1 && <g transform="translate(87 -35) rotate(-25)"><path d="M0 0 H18 V-115 H0Z" fill="#796092" /><path d="M0 -115 H18 V-134 H0Z" fill="#d8b896" /><path d="M0 0 9 23 18 0Z" fill="#d8b896" /><path d="M6 16 9 23 12 16Z" fill="#44364f" /><path d="M3 -111 V-7" stroke="#a48aba" strokeWidth="3" /></g>}
-    {scene === 2 && <g transform="translate(55 -98)"><path d="M-25 15 39 -9 98 36 34 62Z" fill="#5e866c" /><path d="M-25 15 V42 L34 88 98 61 V36 L34 62Z" fill="#94b59e" /><path d="M-16 -6 49 -30 107 15 42 41Z" fill="#c5dfcd" /><text x="5" y="16" fontSize="13" fill="#365343" fontFamily="sans-serif" transform="rotate(12)">Project</text></g>}
+    {scene === 2 && <g transform="translate(55 -98)"><path d="M-25 15 39 -9 98 36 34 62Z" fill="#5e866c" /><path d="M-25 15 V42 L34 88 98 61 V36 L34 62Z" fill="#94b59e" /><path d="M-16 -6 49 -30 107 15 42 41Z" fill="#c5dfcd" /><text x="5" y="16" fontSize="13" fill="#365343" fontFamily="'Be Vietnam Pro', sans-serif" transform="rotate(12)">Project</text></g>}
     {scene === 3 && <g transform="translate(45 -124)"><path d="M-35 15 64 -3 91 96 -9 115Z" fill="#b76965" /><path d="M-35 0 64 -18 91 81 -9 100Z" fill="#fff4e6" /><path d="M-35 0 64 -18 70 6 -28 24Z" fill="#cb8076" /><path d="M0 46 15 58 43 24" fill="none" stroke="#855854" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" /><path d="M-15 -14 V10 M40 -24 V0" stroke="#69516e" strokeWidth="6" strokeLinecap="round" /></g>}
     {scene === 4 && <g transform="translate(60 -120)"><path d="M-30 0 60 -16 88 92 -2 108Z" fill="#76608c" /><path d="M-23 5 54 -8 76 79 0 94Z" fill="#e9e0f2" /><path d="M-5 35 15 52 45 15" fill="none" stroke="#947aaa" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" /><circle cx="34" cy="88" r="4" fill="#b9a9c9" /></g>}
     <g transform="translate(-96 40)"><path d="M0 0 36 -12 62 12 25 26Z" fill="#957eaa" /><path d="M0 0 V14 L25 39 62 25 V12 L25 26Z" fill="#c3afd1" /></g>

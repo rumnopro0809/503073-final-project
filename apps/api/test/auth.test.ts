@@ -11,9 +11,11 @@ import { createApp } from '../src/app.js';
 let db: Database;
 let app: ReturnType<typeof createApp>;
 let messages: { email: string; url: string }[] = [];
+let resets: { email: string; url: string }[] = [];
 let failEmail = false;
 const base = { email: 'student@example.test', displayName: 'Sinh viên', password: 'A good password 123!', confirmPassword: 'A good password 123!' };
 const options = () => ({ db, appUrl: 'http://localhost:5173', production: false, rateLimit: false,
+  sendPasswordReset: async (email: string, url: string) => { if (failEmail) throw new Error('SMTP unavailable'); resets.push({ email, url }); },
   sendVerification: async (email: string, url: string) => { if (failEmail) throw new Error('SMTP unavailable'); messages.push({ email, url }); } });
 const post = (route: string, body: object, cookie?: string) => {
   const req = request(app).post(`/api/auth/${route}`).set('X-Requested-With', 'GhiChu').set('Origin', 'http://localhost:5173');
@@ -23,13 +25,96 @@ const post = (route: string, body: object, cookie?: string) => {
 const cookieOf = (res: { headers: Record<string, unknown> }) => (res.headers['set-cookie'] as string[])[0].split(';')[0];
 
 before(async () => { db = await openDatabase(); await migrate(db); app = createApp(options()); });
-beforeEach(async () => { await db.query('TRUNCATE users CASCADE'); messages = []; failEmail = false; });
+beforeEach(async () => { await db.query('TRUNCATE users CASCADE'); messages = []; resets = []; failEmail = false; });
 after(async () => { await db.close(); });
 
 test('unauthenticated requests cannot read the current account', async () => {
   const response = await request(app).get('/api/auth/me');
   assert.equal(response.status, 401);
   assert.equal(response.headers['cache-control'], 'no-store');
+});
+
+test('profile updates are authenticated, validate names and cannot change email or ownership', async () => {
+  await request(app).patch('/api/auth/profile').set('X-Requested-With','GhiChu').send({displayName:'New'}).expect(401);
+  const registered = await post('register', base);
+  const cookie = cookieOf(registered);
+  for (const body of [{displayName:''},{displayName:'x'.repeat(81)},{displayName:'New',email:'intruder@example.test'}])
+    await request(app).patch('/api/auth/profile').set('X-Requested-With','GhiChu').set('Cookie',cookie).send(body).expect(422);
+  const changed = await request(app).patch('/api/auth/profile').set('X-Requested-With','GhiChu').set('Cookie',cookie).send({displayName:'  Tên mới  '}).expect(200);
+  assert.equal(changed.body.user.displayName,'Tên mới'); assert.equal(changed.body.user.email,base.email);
+  assert.equal((await request(app).get('/api/auth/me').set('Cookie',cookie)).body.user.displayName,'Tên mới');
+});
+
+test('preferences validate every field, merge partial changes and stay scoped to the account', async () => {
+  const cookie=cookieOf(await post('register',base));
+  await request(app).get('/api/auth/preferences').expect(401);
+  const patch=(body:object)=>request(app).patch('/api/auth/preferences').set('X-Requested-With','GhiChu').set('Cookie',cookie).send(body);
+  for(const body of [{theme:'script'},{fontSize:200},{noteColor:'url(evil)'},{unknown:true},{}]) assert.equal((await patch(body)).status,422);
+  assert.equal((await patch({theme:'dark',fontSize:18})).status,200);
+  assert.equal((await patch({noteColor:'#e8f1ff'})).status,200);
+  await migrate(db);
+  const saved=(await request(app).get('/api/auth/preferences').set('Cookie',cookie).expect(200)).body.preferences;
+  assert.equal(saved.theme,'dark'); assert.equal(saved.fontSize,18); assert.equal(saved.noteColor,'#e8f1ff');
+  const other=cookieOf(await post('register',{...base,email:'other@example.test'}));
+  assert.equal((await request(app).get('/api/auth/preferences').set('Cookie',other)).body.preferences.theme,'light');
+});
+
+test('avatars validate content and size, persist and remain private to the signed-in account', async () => {
+  const cookie = cookieOf(await post('register',base));
+  await request(app).post('/api/auth/avatar').set('X-Requested-With','GhiChu').send({data:'aGVsbG8='}).expect(401);
+  for (const data of ['invalid','aGVsbG8=',Buffer.from('<svg></svg>').toString('base64'),Buffer.alloc(2*1024*1024+1).toString('base64')])
+    await request(app).post('/api/auth/avatar').set('X-Requested-With','GhiChu').set('Cookie',cookie).send({data}).expect(422);
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  const uploaded = await request(app).post('/api/auth/avatar').set('X-Requested-With','GhiChu').set('Cookie',cookie).send({data:png}).expect(200);
+  assert.match(uploaded.body.user.avatarUrl,/^\/api\/auth\/avatar\?v=/);
+  const image = await request(app).get(uploaded.body.user.avatarUrl).set('Cookie',cookie).expect(200);
+  assert.match(image.headers['content-type'],/image\/png/); assert.deepEqual(image.body,Buffer.from(png,'base64'));
+  const other = cookieOf(await post('register',{...base,email:'other@example.test'}));
+  await request(app).get('/api/auth/avatar').set('Cookie',other).expect(404);
+  await request(app).get('/api/auth/avatar').expect(401);
+  const removed = await request(app).delete('/api/auth/avatar').set('X-Requested-With','GhiChu').set('Cookie',cookie).send({}).expect(200);
+  assert.equal(removed.body.user.avatarUrl,null);
+  await request(app).get('/api/auth/avatar').set('Cookie',cookie).expect(404);
+});
+
+test('changing password needs the current password and revokes every session and pending reset', async () => {
+  const cookie = cookieOf(await post('register',base));
+  const second = cookieOf(await post('login',base));
+  await post('forgot-password',{email:base.email});
+  const next = {currentPassword:base.password,password:'A changed password 2026!',confirmPassword:'A changed password 2026!'};
+  await post('change-password',next).then(r=>assert.equal(r.status,401));
+  assert.equal((await post('change-password',{...next,currentPassword:'wrong'},cookie)).status,422);
+  assert.equal((await post('change-password',{...next,confirmPassword:'wrong'},cookie)).status,422);
+  assert.equal((await post('change-password',next,cookie)).status,200);
+  for (const session of [cookie,second]) await request(app).get('/api/auth/me').set('Cookie',session).expect(401);
+  assert.equal((await post('login',base)).status,401);
+  assert.equal((await post('login',{email:base.email,password:next.password})).status,200);
+  assert.equal((await db.query('SELECT * FROM password_reset_tokens')).rows.length,0);
+});
+
+test('reset links replace previous links, expire, are single-use and never auto-login', async () => {
+  const cookie = cookieOf(await post('register',base));
+  const known = await post('forgot-password',{email:base.email});
+  const unknown = await post('forgot-password',{email:'unknown@example.test'});
+  assert.equal(known.status,200); assert.deepEqual(known.body,unknown.body); assert.equal(resets.length,1);
+  const firstToken = new URL(resets[0].url).searchParams.get('token');
+  await post('forgot-password',{email:base.email});
+  const token = new URL(resets[1].url).searchParams.get('token');
+  const body = {password:'New password 2026!',confirmPassword:'New password 2026!',token};
+  assert.equal((await post('reset-password',{...body,token:firstToken})).status,422);
+  assert.equal((await post('reset-password',{...body,confirmPassword:'wrong'})).status,422);
+  const reset = await post('reset-password',body);
+  assert.equal(reset.status,200); assert.equal(reset.headers['set-cookie'],undefined);
+  assert.equal((await post('reset-password',body)).status,422);
+  await request(app).get('/api/auth/me').set('Cookie',cookie).expect(401);
+  assert.equal((await post('login',base)).status,401);
+  assert.equal((await post('login',{email:base.email,password:body.password})).status,200);
+  await post('forgot-password',{email:base.email});
+  await db.query("UPDATE password_reset_tokens SET expires_at=NOW()-INTERVAL '1 second'");
+  const expiredToken = new URL(resets.at(-1)!.url).searchParams.get('token');
+  assert.equal((await post('reset-password',{...body,token:expiredToken})).status,422);
+  failEmail=true;
+  assert.deepEqual((await post('forgot-password',{email:base.email})).body,unknown.body);
 });
 
 test('registration hashes password, auto-logs in and sends an activation link', async () => {

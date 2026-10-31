@@ -5,16 +5,18 @@ import rateLimit from 'express-rate-limit';
 import type { Database, Sql } from './database.js';
 import type { SendVerification } from './mail.js';
 import { SESSION_COOKIE as COOKIE, hashToken as tokenHash, findSessionUser, type SessionUser } from './session.js';
+import { decodeUpload, imageType } from './uploads.js';
 
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const newToken = () => randomBytes(32).toString('hex');
 type UserRow = Record<string, unknown> & {
   id: string; email: string; display_name: string; email_verified_at: Date | null; password_hash: string;
 };
-const publicUser = (u: SessionUser) => ({ id: u.id, email: u.email, displayName: u.display_name, emailVerified: Boolean(u.email_verified_at) });
+const publicUser = (u: SessionUser) => ({ id: u.id, email: u.email, displayName: u.display_name, emailVerified: Boolean(u.email_verified_at),
+  avatarUrl: (u.has_avatar || u.avatar_data) ? `/api/auth/avatar?v=${u.profile_version}` : null });
 const cookieOptions = (production: boolean) => ({ httpOnly: true, sameSite: 'lax' as const, secure: production, path: '/' });
 
-export interface AuthOptions { db: Database; appUrl: string; production: boolean; sendVerification: SendVerification; rateLimit?: boolean; }
+export interface AuthOptions { db: Database; appUrl: string; production: boolean; sendVerification: SendVerification; sendPasswordReset?: SendVerification; rateLimit?: boolean; }
 
 export function authRouter(options: AuthOptions) {
   const { db, appUrl, production, sendVerification } = options;
@@ -110,6 +112,131 @@ export function authRouter(options: AuthOptions) {
     if (typeof token === 'string') await db.query('DELETE FROM sessions WHERE token_hash = $1', [tokenHash(token)]);
     res.clearCookie(COOKIE, cookieOptions(production));
     res.status(204).end();
+  });
+
+  router.patch('/profile', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const name = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : '';
+    if (!name || name.length > 80 || Object.keys(req.body ?? {}).some(key => key !== 'displayName')) {
+      res.status(422).json({ message: 'Tên hiển thị cần có từ 1 đến 80 ký tự.' }); return;
+    }
+    await db.query('UPDATE users SET display_name = $1, profile_version = profile_version + 1 WHERE id = $2', [name, user.id]);
+    res.json({ user: publicUser((await currentUser(req))!) });
+  });
+
+  const defaultPreferences = { density: 'comfortable', fontSize: 14, theme: 'light', noteColor: '#fffdf7' };
+  router.get('/preferences', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const { rows } = await db.query<{preferences: Record<string, unknown>}>('SELECT preferences FROM users WHERE id=$1',[user.id]);
+    res.json({preferences: {...defaultPreferences,...rows[0].preferences}});
+  });
+  router.patch('/preferences', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const body = req.body ?? {};
+    const allowed: Record<string, unknown[]> = { density:['comfortable','compact'], fontSize:[14,16,18], theme:['light','dark'], noteColor:['#fffdf7','#f0eaff','#e8f5ee','#fff2d8','#fce9ef','#e8f1ff'] };
+    if (!Object.keys(body).length || Object.entries(body).some(([key,value]) => !allowed[key]?.includes(value))) {
+      res.status(422).json({message:'Tùy chọn hiển thị không hợp lệ.'}); return;
+    }
+    const {rows} = await db.query<{preferences:Record<string,unknown>}>(`UPDATE users SET preferences=preferences || $1::jsonb WHERE id=$2 RETURNING preferences`,[JSON.stringify(body),user.id]);
+    res.json({preferences:{...defaultPreferences,...rows[0].preferences}});
+  });
+
+  router.get('/avatar', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const { rows } = await db.query<{ avatar_data: Uint8Array | null; avatar_type: string }>('SELECT avatar_data, avatar_type FROM users WHERE id = $1', [user.id]);
+    if (!rows[0]?.avatar_data) { res.sendStatus(404); return; }
+    res.type(rows[0].avatar_type).send(Buffer.from(rows[0].avatar_data));
+  });
+  router.post('/avatar', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const bytes = decodeUpload(req.body?.data, 2 * 1024 * 1024);
+    const type = bytes && imageType(bytes);
+    if (!bytes || !type) { res.status(422).json({ message: 'Chọn ảnh PNG, JPEG hoặc WebP hợp lệ, tối đa 2 MB.' }); return; }
+    await db.query('UPDATE users SET avatar_data = $1, avatar_type = $2, profile_version = profile_version + 1 WHERE id = $3', [bytes, type, user.id]);
+    res.json({ user: publicUser((await currentUser(req))!) });
+  });
+  router.delete('/avatar', async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    await db.query('UPDATE users SET avatar_data = NULL, avatar_type = NULL, profile_version = profile_version + 1 WHERE id = $1', [user.id]);
+    res.json({ user: publicUser((await currentUser(req))!) });
+  });
+
+  const passwordFields = (body: Record<string, unknown>) => {
+    const fields: Record<string, string> = {};
+    if (typeof body.password !== 'string' || body.password.length < 8 || Buffer.byteLength(body.password, 'utf8') > 72) fields.password = 'Mật khẩu cần ít nhất 8 ký tự và không vượt quá 72 byte.';
+    if (body.password !== body.confirmPassword) fields.confirmPassword = 'Mật khẩu nhập lại chưa khớp.';
+    return fields;
+  };
+  router.post('/change-password', limiter(10), async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
+    const body = req.body ?? {};
+    const fields = passwordFields(body);
+    if (typeof body.currentPassword !== 'string' || Buffer.byteLength(body.currentPassword) > 72) fields.currentPassword = 'Nhập mật khẩu hiện tại.';
+    if (Object.keys(fields).length) { res.status(422).json({ message: 'Kiểm tra lại mật khẩu.', fields }); return; }
+    const hash = await bcrypt.hash(body.password, 12);
+    const changed = await db.transaction(async sql => {
+      const { rows } = await sql.query<UserRow>('SELECT * FROM users WHERE id = $1 FOR UPDATE', [user.id]);
+      if (!rows[0] || !await bcrypt.compare(body.currentPassword, rows[0].password_hash)) return false;
+      // Recheck the session under the user lock; a concurrent password change may have revoked it.
+      if (!await findSessionUser(sql, req)) return false;
+      await sql.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, user.id]);
+      await sql.query('DELETE FROM sessions WHERE user_id = $1', [user.id]);
+      await sql.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id]);
+      return true;
+    });
+    if (!changed) { res.status(422).json({ message: 'Mật khẩu hiện tại chưa đúng hoặc phiên đã hết hạn.', fields: { currentPassword: 'Kiểm tra mật khẩu hiện tại.' } }); return; }
+    res.clearCookie(COOKIE, cookieOptions(production));
+    res.json({ message: 'Đã đổi mật khẩu và đăng xuất các phiên. Vui lòng đăng nhập lại.' });
+  });
+
+  router.post('/forgot-password', limiter(5), async (req, res) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) { res.status(422).json({ message: 'Nhập địa chỉ email hợp lệ.' }); return; }
+    const token = newToken();
+    const issued = await db.transaction(async sql => {
+      const { rows } = await sql.query<{ id: string }>('SELECT id FROM users WHERE email = $1 FOR UPDATE', [email]);
+      if (!rows[0]) return false;
+      await sql.query(`INSERT INTO password_reset_tokens(token_hash,user_id,expires_at) VALUES($1,$2,$3)
+        ON CONFLICT(user_id) DO UPDATE SET token_hash=EXCLUDED.token_hash, expires_at=EXCLUDED.expires_at`,
+      [tokenHash(token), rows[0].id, new Date(Date.now() + 30 * 60 * 1000).toISOString()]);
+      return true;
+    });
+    if (issued) {
+      try {
+        if (!options.sendPasswordReset) throw new Error('Password reset mail is not configured');
+        await options.sendPasswordReset(email, `${new URL(appUrl).origin}/reset-password?token=${token}`);
+      } catch { console.error('Password reset email delivery failed.'); }
+    }
+    // Do not disclose whether the address belongs to an account, including mail delivery failures.
+    res.json({ message: 'Nếu email có tài khoản, liên kết đặt lại mật khẩu sẽ được gửi. Kiểm tra hộp thư; liên kết có hiệu lực 30 phút.' });
+  });
+  router.post('/reset-password', limiter(10), async (req, res) => {
+    const body = req.body ?? {};
+    const fields = passwordFields(body);
+    if (typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token)) fields.token = 'Liên kết đặt lại không hợp lệ.';
+    if (Object.keys(fields).length) { res.status(422).json({ message: 'Kiểm tra lại thông tin đặt lại mật khẩu.', fields }); return; }
+    const hash = await bcrypt.hash(body.password, 12);
+    const changed = await db.transaction(async sql => {
+      // Always lock the user before token mutation, matching change-password/forgot-password.
+      const { rows } = await sql.query<{ id: string }>(`SELECT u.id FROM users u JOIN password_reset_tokens t ON t.user_id=u.id
+        WHERE t.token_hash=$1 AND t.expires_at>NOW() FOR UPDATE OF u`, [tokenHash(body.token)]);
+      if (!rows[0]) return false;
+      const consumed = await sql.query<{ user_id: string }>('DELETE FROM password_reset_tokens WHERE token_hash=$1 AND expires_at>NOW() RETURNING user_id', [tokenHash(body.token)]);
+      if (!consumed.rows[0]) return false;
+      await sql.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, rows[0].id]);
+      await sql.query('DELETE FROM sessions WHERE user_id=$1', [rows[0].id]);
+      return true;
+    });
+    if (!changed) { res.status(422).json({ message: 'Liên kết không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới.' }); return; }
+    // No auto-login after reset; unrelated signed-in accounts keep their own sessions.
+    res.json({ message: 'Đã đặt lại mật khẩu. Vui lòng đăng nhập bằng mật khẩu mới.' });
   });
 
   router.post('/resend-verification', limiter(5), async (req, res) => {

@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import type { Label, Note, NotesResponse } from '../src/types/notes';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost:5173/' });
-for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'HTMLTextAreaElement', 'Node', 'Element', 'MutationObserver']) {
+for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'HTMLTextAreaElement', 'Node', 'Element', 'MutationObserver', 'FileReader', 'File']) {
   Object.defineProperty(globalThis, key, { value: (dom.window as unknown as Record<string, unknown>)[key], configurable: true });
 }
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -25,6 +25,7 @@ let respond: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let respondLabels: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let expired: number;
 let reminderNotes: Note[] = [];
+let preferences = {density:'comfortable',fontSize:14,theme:'light',noteColor:'#fffdf7'};
 let isDirty: boolean;
 const onExpired = () => { expired++; };
 const onDirty = (value: boolean) => { isDirty = value; };
@@ -40,6 +41,7 @@ const contentInput = () => screen.getByLabelText<HTMLTextAreaElement>('Nội dun
 beforeEach(() => {
   calls.length = 0; expired = 0; isDirty = false;
   reminderNotes = [];
+  preferences = {density:'comfortable',fontSize:14,theme:'light',noteColor:'#fffdf7'};
   window.localStorage.clear();
   window.confirm = () => true;
   respond = url => url.includes('?') ? json(page([])) : json({ note: noteA });
@@ -47,6 +49,11 @@ beforeEach(() => {
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     if (url === '/api/notes/reminders') return json({ notes: reminderNotes });
+    if (url.startsWith('/api/attachments/notes/')) return json({attachments:[]});
+    if (url === '/api/auth/preferences') {
+      if (init?.method === 'PATCH') preferences = {...preferences,...JSON.parse(String(init.body))};
+      return json({preferences});
+    }
     calls.push({ url, method: init?.method || 'GET', signal: init?.signal, body: init?.body as string | undefined,
       key: new Headers(init?.headers).get('Idempotency-Key') });
     return url.startsWith('/api/labels') ? respondLabels(url, init) : respond(url, init);
@@ -73,6 +80,9 @@ test('sidebar settings and about keep the editor draft and remember display pref
   assert.ok(screen.getByRole('region',{name:'Cài đặt hiển thị'}));
   await actor.selectOptions(screen.getByLabelText('Mật độ thẻ'),'compact');
   await actor.selectOptions(screen.getByLabelText('Cỡ chữ ghi chú'),'16');
+  await actor.selectOptions(screen.getByLabelText('Giao diện'),'dark');
+  await actor.selectOptions(screen.getByLabelText('Màu ghi chú'),'#e8f1ff');
+  assert.equal(document.documentElement.dataset.theme,'dark');
   await actor.click(screen.getByRole('button',{name:'Về ứng dụng'}));
   assert.ok(screen.getByRole('region',{name:'Về ứng dụng'}));
   await actor.click(screen.getByRole('button',{name:'Quay lại ghi chú'}));
@@ -82,6 +92,89 @@ test('sidebar settings and about keep the editor draft and remember display pref
   await actor.click(screen.getByRole('button',{name:'Cài đặt'}));
   assert.equal(screen.getByLabelText<HTMLSelectElement>('Mật độ thẻ').value,'compact');
   assert.equal(screen.getByLabelText<HTMLSelectElement>('Cỡ chữ ghi chú').value,'16');
+  assert.equal(screen.getByLabelText<HTMLSelectElement>('Giao diện').value,'dark');
+  assert.equal(screen.getByLabelText<HTMLSelectElement>('Màu ghi chú').value,'#e8f1ff');
+});
+
+test('guest and rendered lists keep the latest pin before older urgent pins and unpinned notes', async () => {
+  const notes=[{...noteA,pinned:true,pinnedAt:'2026-10-01T00:00:00Z',dueAt:'2026-10-01T00:00:00Z',important:true},
+    {...noteB,pinned:true,pinnedAt:'2026-10-02T00:00:00Z'},
+    {...noteA,id:'c',title:'Quá hạn chưa ghim',dueAt:'2026-09-01T00:00:00Z',important:true}];
+  window.localStorage.setItem(GUEST_KEY,JSON.stringify({version:1,notes,labels:[],keys:{}}));
+  const request=createLocalApi(window.localStorage);
+  for(const sort of ['updated','created','title']) {
+    assert.deepEqual((await request<NotesResponse>(`/notes?sort=${sort}`)).notes.map(note=>note.id),['b','a','c']);
+    assert.equal((await request<NotesResponse>(`/notes?sort=${sort}&limit=1&offset=1`)).notes[0].id,'a');
+  }
+  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty}/>);
+  await screen.findByRole('button',{name:'Mở ghi chú Ghi chú B'});
+  assert.deepEqual(within(screen.getByLabelText('Danh sách ghi chú')).getAllByRole('button').map(button=>button.getAttribute('aria-label')),['Mở ghi chú Ghi chú B','Mở ghi chú Ghi chú A','Mở ghi chú Quá hạn chưa ghim']);
+});
+
+test('password recovery submits email, validates reset failure and only completes after API success', async () => {
+  const {PasswordRecovery}=await import('../src/components/PasswordRecovery');
+  let resetCount=0;
+  respond=(url,init)=>{
+    if(url==='/api/auth/forgot-password') { assert.equal(JSON.parse(String(init?.body)).email,'student@example.test'); return json({message:'Kiểm tra hộp thư'}); }
+    if(url==='/api/auth/reset-password') return JSON.parse(String(init?.body)).confirmPassword==='New password 2026!' ? json({message:'Đã đặt lại mật khẩu'}) : json({message:'Mật khẩu nhập lại chưa khớp'},422);
+    return json({message:'Vui lòng đăng nhập'},401);
+  };
+  const actor=user();
+  render(<MemoryRouter><PasswordRecovery onReset={()=>resetCount++}/></MemoryRouter>);
+  await actor.type(screen.getByLabelText('Email tài khoản'),'student@example.test');
+  await actor.click(screen.getByRole('button',{name:'Gửi liên kết đặt lại'}));
+  await screen.findByText('Kiểm tra hộp thư'); cleanup();
+  render(<MemoryRouter initialEntries={['/reset-password?token=abc']}><PasswordRecovery reset onReset={()=>resetCount++}/></MemoryRouter>);
+  await actor.type(screen.getByLabelText('Mật khẩu mới',{exact:true}),'New password 2026!');
+  await actor.type(screen.getByLabelText('Nhập lại mật khẩu mới'),'wrong');
+  await actor.click(screen.getByRole('button',{name:'Đặt lại mật khẩu'}));
+  assert.match((await screen.findByRole('alert')).textContent??'',/chưa khớp/); assert.equal(resetCount,0);
+  await actor.clear(screen.getByLabelText('Nhập lại mật khẩu mới'));
+  await actor.type(screen.getByLabelText('Nhập lại mật khẩu mới'),'New password 2026!');
+  await actor.click(screen.getByRole('button',{name:'Đặt lại mật khẩu'}));
+  await screen.findByText('Đã đặt lại mật khẩu'); assert.equal(resetCount,1);
+  assert.equal(screen.queryByLabelText('Mật khẩu mới',{exact:true}),null);
+});
+
+test('profile edits update the account and password change waits for a saved draft', async () => {
+  const {ProfilePanel}=await import('../src/components/ProfilePanel');
+  let changedName='',signedOut=0,allow=false;
+  respond=(url,init)=>url==='/api/auth/profile'?json({user:{id:'u',email:'student@example.test',displayName:JSON.parse(String(init?.body)).displayName,emailVerified:false}}):json({message:'Đã đổi mật khẩu'});
+  render(<ProfilePanel user={{id:'u',email:'student@example.test',displayName:'Student',emailVerified:false}} onUserChange={user=>{changedName=user.displayName;}} onClose={()=>{}} onSignedOut={()=>signedOut++} beforePasswordChange={async()=>allow}/>);
+  const actor=user();
+  await actor.clear(screen.getByLabelText('Tên hiển thị')); await actor.type(screen.getByLabelText('Tên hiển thị'),'Tên mới');
+  await actor.click(screen.getByRole('button',{name:'Cập nhật hồ sơ'})); await screen.findByText('Đã cập nhật hồ sơ.'); assert.equal(changedName,'Tên mới');
+  await actor.type(screen.getByLabelText('Mật khẩu hiện tại'),'Old password 2026!');
+  await actor.type(screen.getByLabelText('Mật khẩu mới',{exact:true}),'New password 2026!');
+  await actor.type(screen.getByLabelText('Nhập lại mật khẩu mới'),'New password 2026!');
+  await actor.click(screen.getByRole('button',{name:'Đổi mật khẩu và đăng xuất'}));
+  assert.equal(calls.some(call=>call.url==='/api/auth/change-password'),false);
+  allow=true; await actor.click(screen.getByRole('button',{name:'Đổi mật khẩu và đăng xuất'}));
+  await waitFor(()=>assert.equal(signedOut,1));
+});
+
+test('attachments flush before upload and preserve existing files after a failed removal', async () => {
+  const {NoteAttachments}=await import('../src/components/NoteAttachments');
+  const attachments:{url:string;method:string}[]=[]; let flush=false,removalFails=true;
+  const file={id:'file',name:'bài tập.txt',mediaType:'application/octet-stream',size:3,url:'/api/attachments/file'};
+  const previous=globalThis.fetch;
+  globalThis.fetch=(async(input,init)=>{
+    const url=String(input); if(!url.startsWith('/api/attachments')) return previous(input,init);
+    attachments.push({url,method:init?.method??'GET'});
+    if(init?.method==='POST') {assert.equal(flush,true);return json({attachment:file});}
+    if(init?.method==='DELETE') return removalFails?json({message:'Chưa xóa được'},500):new Response(null,{status:204});
+    return json({attachments:[]});
+  }) as typeof fetch;
+  render(<NoteAttachments noteId="note" beforeUpload={async()=>{flush=true;return true;}}/>);
+  const input=screen.getByLabelText<HTMLInputElement>('Đính kèm tệp');
+  await waitFor(()=>assert.equal(input.disabled,false));
+  await user().upload(input,new window.File(['abc'],'bài tập.txt',{type:'text/plain'}));
+  await screen.findByRole('link',{name:/bài tập.txt/});
+  await user().click(screen.getByRole('button',{name:'Xóa tệp bài tập.txt'}));
+  await screen.findByText('Chưa xóa được'); assert.ok(screen.getByRole('link',{name:/bài tập.txt/}));
+  removalFails=false; await user().click(screen.getByRole('button',{name:'Xóa tệp bài tập.txt'}));
+  await waitFor(()=>assert.equal(screen.queryByRole('link',{name:/bài tập.txt/}),null));
+  assert.equal(attachments.filter(call=>call.method==='POST').length,1);
 });
 
 test('sidebar category requests retain pagination filters and reset when returning to all notes', async () => {

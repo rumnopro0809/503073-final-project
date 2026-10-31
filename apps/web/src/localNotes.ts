@@ -25,10 +25,10 @@ export function createLocalApi(storage: Pick<Storage, 'getItem' | 'setItem'>): t
       const input = (body ?? {}) as Record<string, unknown>;
       const now = new Date().toISOString();
       const hydrate = (note: Note): Note => ({ ...note, completed: isCompleted(note), labels: note.labels.flatMap(label => store.labels.find(item => item.id === label.id) ?? []) });
-      const sortNotes = (notes: Note[]) => notes.sort((a,b) => priority(a) - priority(b)
-        || (priority(a) <= 1 ? Date.parse(a.dueAt!) - Date.parse(b.dueAt!) : 0)
-        || Number(b.pinned) - Number(a.pinned)
+      const sortNotes = (notes: Note[]) => notes.sort((a,b) => Number(b.pinned) - Number(a.pinned)
         || (a.pinned && b.pinned ? Date.parse(b.pinnedAt!) - Date.parse(a.pinnedAt!) : 0)
+        || priority(a) - priority(b)
+        || (priority(a) <= 1 ? Date.parse(a.dueAt!) - Date.parse(b.dueAt!) : 0)
         || (parsed.searchParams.get('sort') === 'title' ? a.title.toLowerCase().localeCompare(b.title.toLowerCase())
           : Date.parse(parsed.searchParams.get('sort') === 'created' ? b.createdAt : b.updatedAt) - Date.parse(parsed.searchParams.get('sort') === 'created' ? a.createdAt : a.updatedAt))
         || b.id.localeCompare(a.id));

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+/* System fallbacks keep first render usable without a connection to a font CDN. */
 :root {
   font-family:'Be Vietnam Pro',sans-serif;
   color:#282637;
@@ -1495,3 +1495,51 @@ form .primary-button {
   .workspace-content .notes-actions { justify-content: space-between; }
   .workspace-content .note-editor-fields textarea { font-size: max(16px,var(--note-font-size)); }
 }
+
+.account-page { min-height:100dvh; padding:32px 20px; display:grid; place-items:center; }
+.recovery-panel { width:min(100%,480px); }
+.profile-panel { max-width:720px; margin:0 auto 28px; }
+.workspace-panel form { display:grid; gap:16px; margin:22px 0; }
+.workspace-panel label { display:grid; gap:8px; font-weight:500; }
+.workspace-panel input { min-width:0; width:100%; padding:12px 14px; font:inherit; border:1px solid var(--border); border-radius:10px; background:#fff; color:inherit; }
+.workspace-panel input:focus-visible { outline:2px solid var(--purple); outline-offset:2px; }
+.workspace-panel .notice { overflow-wrap:anywhere; }
+.profile-identity,.panel-heading,.account-links { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.panel-heading { justify-content:space-between; }
+.profile-identity p { margin:6px 0; overflow-wrap:anywhere; }
+.profile-avatar { width:72px; height:72px; border-radius:50%; object-fit:cover; font-size:28px; }
+.profile-trigger { display:flex; align-items:center; gap:9px; }
+.profile-trigger img { object-fit:cover; }
+.account-links { margin-top:22px; color:var(--purple); text-decoration:underline; }
+@media(max-width:720px) { .account-page { padding:16px 12px; } .profile-panel { padding:20px; } .workspace-panel input { font-size:16px; } }
+.preferences-fields { border:0; padding:0; margin:0; display:grid; gap:18px; min-width:0; }
+.note-card:not(.task-overdue):not(.task-urgent):not(.task-done):not(.task-daily):not(.note-important) { background:var(--note-background,#fffdf7); }
+:root[data-theme=dark] { color-scheme:dark; background:#191820; color:#eeeaf5; --ink:#eeeaf5; --muted:#b8b2c5; --border:#46404f; --purple:#c6acf6; }
+:root[data-theme=dark] body,:root[data-theme=dark] .workspace { background:#191820; color:#eeeaf5; }
+:root[data-theme=dark] .workspace-header,:root[data-theme=dark] .workspace-sidebar,:root[data-theme=dark] .workspace-panel,:root[data-theme=dark] .note-editor,:root[data-theme=dark] .label-manager,:root[data-theme=dark] .notes-search,:root[data-theme=dark] .quick-note { background:#25222e; color:#eeeaf5; border-color:#46404f; }
+:root[data-theme=dark] input,:root[data-theme=dark] textarea,:root[data-theme=dark] select { background:#302c3a; color:#f2edf8; border-color:#686071; }
+:root[data-theme=dark] .quiet-button,:root[data-theme=dark] .icon-button,:root[data-theme=dark] .sidebar-item { color:#e5dcef; }
+:root[data-theme=dark] .sidebar-item[aria-current=page],:root[data-theme=dark] .quiet-button:hover { background:#443651; }
+:root[data-theme=dark] .primary-button { color:#21172e; background:#c6acf6; }
+:root[data-theme=dark] .workspace-intro h1,:root[data-theme=dark] .notes-toolbar h2,:root[data-theme=dark] .note-editor h2,:root[data-theme=dark] .workspace-panel h2 { color:#f2edf8; }
+:root[data-theme=dark] .workspace-intro p,:root[data-theme=dark] .notes-toolbar p,:root[data-theme=dark] .draft-explanation,:root[data-theme=dark] .notes-order-hint,:root[data-theme=dark] .sidebar-storage { color:#c1b8cc; }
+:root[data-theme=dark] .note-card { color:#292637; --muted:#65606b; }
+:root[data-theme=dark] .note-card time { color:#65606b; }
+.note-attachments { border-top:1px solid var(--border); margin-top:20px; padding:20px; min-width:0; }
+.note-attachments h3 { margin-top:0; font-size:15px; }
+.note-attachments p { font-size:12px; line-height:1.7; color:var(--muted); }
+.note-attachments label { display:grid; gap:8px; font-size:13px; }
+.note-attachments input { max-width:100%; font:inherit; }
+.note-attachments ul { list-style:none; padding:0; display:grid; gap:14px; }
+.note-attachments li { padding:12px; border:1px solid var(--border); border-radius:10px; display:flex; align-items:flex-start; flex-direction:column; gap:10px; overflow-wrap:anywhere; min-width:0; }
+.note-attachments img,.note-attachments video { max-width:100%; max-height:280px; border-radius:6px; object-fit:contain; }
+.note-attachments a { text-decoration:underline; color:var(--purple); }
+.note-security,.note-sharing { padding:20px; border-top:1px solid var(--border); min-width:0; }
+.note-security summary,.note-sharing summary { cursor:pointer; font-size:14px; font-weight:600; }
+.note-security p,.note-sharing p { font-size:12px; line-height:1.7; color:var(--muted); }
+.note-security form,.note-sharing form { display:grid; gap:12px; margin:16px 0; }
+.note-security label,.note-sharing label { display:grid; gap:8px; font-size:12px; }
+.note-security input,.note-sharing textarea,.note-sharing select { padding:10px; max-width:100%; width:100%; min-width:0; font:inherit; border:1px solid var(--border); border-radius:8px; }
+.note-sharing ul { padding:0; list-style:none; display:grid; gap:12px; }
+.note-sharing li { border:1px solid var(--border); border-radius:8px; padding:12px; display:grid; gap:8px; overflow-wrap:anywhere; }
+@media(max-width:720px) { .note-security input,.note-sharing textarea,.note-sharing select { font-size:16px; } }

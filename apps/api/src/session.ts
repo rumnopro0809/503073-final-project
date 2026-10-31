@@ -18,7 +18,7 @@ export async function findSessionUser(db: Sql, req: Request): Promise<SessionUse
   const token = req.cookies?.[SESSION_COOKIE];
   if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return undefined;
   const { rows } = await db.query<SessionUser>(
-    `SELECT u.id, u.email, u.display_name, u.email_verified_at
+    `SELECT u.id, u.email, u.display_name, u.email_verified_at, (u.avatar_data IS NOT NULL) AS has_avatar, u.profile_version
        FROM users u JOIN sessions s ON s.user_id = u.id
       WHERE s.token_hash = $1 AND s.expires_at > NOW()`,
     [hashToken(token)],
