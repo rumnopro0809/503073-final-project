@@ -675,7 +675,7 @@ form .primary-button {
   border-radius:8px;
   font-size:10px;
   min-height:40px;
-  color:#7b7188;
+  color:#6f6379;
   margin-left:12px
 }
 
@@ -825,7 +825,7 @@ form .primary-button {
   padding:22px;
   font-size:9px;
   letter-spacing:.6px;
-  color:#a195aa
+  color:#6f6379
 }
 
 @media(min-width:1500px) {
@@ -1159,7 +1159,7 @@ form .primary-button {
 .notes-workspace { margin-top: 20px; }
 .notes-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .notes-toolbar h2 { margin: 0 0 7px; font-size: 15px; font-weight: 600; }
-.notes-toolbar p { margin: 0; color: #89808f; font-size: 12px; line-height: 1.7; }
+.notes-toolbar p { margin: 0; color: #74677f; font-size: 12px; line-height: 1.7; }
 .notes-actions { display: flex; align-items: center; gap: 10px; }
 .notes-actions .quiet-button { margin: 0; font-size: 12px; }
 .new-note-button { width: auto; min-height: 43px; white-space: nowrap; }
@@ -1241,7 +1241,7 @@ form .primary-button {
 .filter-select:focus-within { outline: 2px solid #ae95c5; outline-offset: 2px; }
 .filter-select select:focus { outline: 0; }
 .sort-select { margin-left: auto; }
-.notes-order-hint { display: flex; gap: 6px; align-items: center; margin: 13px 0 24px; font-size: 11px; color: #84758e; }
+.notes-order-hint { display: flex; gap: 6px; align-items: center; margin: 13px 0 24px; font-size: 11px; color: #74677f; }
 .labels-load-error { margin-bottom: 20px; }
 .labels-load-error .quiet-button { margin: 0; }
 .organization-feedback { padding: 10px 14px; background: #edf5ee; border: 1px solid #d7e5d8; border-radius: 8px; font-size: 12px; color: #43644d; line-height: 1.7; }
@@ -1267,7 +1267,7 @@ form .primary-button {
 .label-chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; padding: 4px 8px; border: 1px solid #e0d8e8; border-radius: 20px; background: #ffffffb0; color: #65576f; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .note-card .note-labels { margin: 0 0 13px; }
 .note-card p { font-size: 13px; color: #6d6178; }
-.note-card time { font-size: 11px; color: #7d7089; }
+.note-card time { font-size: 11px; color: #6f6379; }
 .note-pinned-badge { display: inline-flex; align-items: center; gap: 5px; color: #7a568f; font-size: 11px; }
 .view-list .note-card-corner:has(.note-pinned-badge) { display: block; margin-bottom: 8px; }
 .label-manager { margin: 0 0 24px; padding: 20px; border: 1px solid #dcd2e6; border-radius: 12px; background: #faf7fd; }
@@ -1388,7 +1388,7 @@ form .primary-button {
 .workspace-intro p { color: #716c7d; }
 .workspace-header .brand-mark { box-shadow: 0 5px 12px #6551a42b; }
 .notes-toolbar h2 { font-size: 16px; letter-spacing: -.3px; }
-.notes-toolbar p { font-size: 12px; color: #827b8f; }
+.notes-toolbar p { font-size: 12px; color: #74677f; }
 .notes-actions .new-note-button { box-shadow: 0 5px 15px #6551a42b; border-radius: 11px; }
 .quick-note { padding: 20px 22px; max-width: 660px; border-radius: 15px; border-color: #ded9e9; box-shadow: 0 5px 22px #3026450c; font-weight: 500; }
 .quick-note > svg { color: #7353ab; background: #eee7fa; box-sizing: content-box; padding: 8px; border-radius: 10px; }
@@ -1418,7 +1418,7 @@ form .primary-button {
 .reminder-options .important-toggle { padding: 8px 11px; border: 1px solid #e5d6b6; border-radius: 9px; color: #8d621b; background: #fffaf0; }
 .reminder-options .important-toggle.active { border-color: #dca338; background: #ffe9b0; color: #7a4900; }
 .important-toggle input { accent-color: #b77908; }
-.colored-label { color: var(--label-color); border-color: color-mix(in srgb, var(--label-color) 35%, white); background: color-mix(in srgb, var(--label-color) 13%, white); font-weight: 600; padding: 5px 9px; }
+.colored-label { color: color-mix(in srgb, var(--label-color) 72%, black); border-color: color-mix(in srgb, var(--label-color) 35%, white); background: color-mix(in srgb, var(--label-color) 13%, white); font-weight: 600; padding: 5px 9px; }
 .label-important { color: #7a4900; background: #ffe9b0; border-color: #e6b14c; }
 .note-editor { padding: 25px; border-radius: 18px; border: 1px solid #dcd3e9; box-shadow: 0 14px 45px #49305b14; }
 .note-editor-header { border-bottom: 1px solid #ede8f3; padding-bottom: 16px; margin-bottom: 18px; }
@@ -1456,16 +1456,16 @@ form .primary-button {
 .sidebar-item.category-overdue { color: #b05b62; }
 .sidebar-labels { border-top: 1px solid #ede8f2; border-bottom: 1px solid #ede8f2; margin: 16px 0 12px; padding: 15px 0; }
 .sidebar-labels .filter-select { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0 10px 10px; }
-.sidebar-labels .filter-select > span { font-size: 11px; color: #9989a6; }
+.sidebar-labels .filter-select > span { font-size: 11px; color: #74677f; }
 .sidebar-labels select { width: 100%; min-width: 0; max-width: 100%; font-size: 12px; }
 .sidebar-logout { color: #ad5965; }
-.sidebar-storage { margin: 17px 10px 0; font-size: 10px; color: #988ba2; line-height: 1.7; }
+.sidebar-storage { margin: 17px 10px 0; font-size: 10px; color: #74677f; line-height: 1.7; }
 .workspace-content .notes-toolbar { align-items: flex-start; }
 .workspace-content .notes-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .workspace-content .quick-note { width: 100%; }
 .workspace-panel { background: #fff; padding: 30px; border: 1px solid #e3dfea; border-radius: 18px; box-shadow: 0 8px 26px #49305b08; }
 .workspace-panel h2 { margin: 0 0 14px; font-size: 24px; color: #493761; }
-.workspace-panel p, .workspace-panel dd { font-size: 13px; color: #80728d; line-height: 1.9; }
+.workspace-panel p, .workspace-panel dd { font-size: 13px; color: #74677f; line-height: 1.9; }
 .workspace-panel > label { display: flex; flex-direction: column; gap: 10px; max-width: 340px; margin: 22px 0; font-size: 13px; color: #5e4a74; }
 .workspace-panel select { padding: 12px; border: 1px solid #dcd2e6; border-radius: 9px; background: #fbf9fd; color: #564365; font: inherit; }
 .workspace-panel select:focus-visible { outline: 2px solid #a18bc7; outline-offset: 2px; }
