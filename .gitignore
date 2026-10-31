@@ -6,6 +6,7 @@ build-api/
 coverage/
 .vite/
 *.tsbuildinfo
+.taste-skill/
 
 # Credentials and local configuration
 .env

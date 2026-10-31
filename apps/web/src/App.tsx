@@ -4,6 +4,7 @@ import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole
 import { api, ApiError, type User } from './api';
 import { NotesWorkspace } from './components/NotesWorkspace';
 import { useEntrance } from './hooks/useEntrance';
+import { WelcomePage } from './components/WelcomePage';
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>ghi chú<span className="brand-dot">.</span></span></div>;
@@ -116,6 +117,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
         </form>
         {!reauthEmail && <p className="account-prompt">{register ? 'Đã có một góc riêng?' : 'Bạn chưa có tài khoản?'} <Link to={register ? '/login' : '/register'}>{register ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight size={13} /></Link></p>}
         {!reauthEmail && <Link className="guest-entry" to="/guest">Dùng không cần tài khoản <ArrowRight size={16} /><small>Ghi chú chỉ lưu trong trình duyệt này</small></Link>}
+        {!reauthEmail && <Link className="welcome-backlink" to="/welcome">Khám phá ghi chú.</Link>}
         <div className="form-assurance"><ShieldCheck size={15} /><span>Không gian của bạn, chỉ bạn mới có thể truy cập.</span></div>
       </div>
       <footer className="auth-bottom"><span>© {new Date().getFullYear()} ghi chú.</span><span>Viết xuống. Nhẹ đầu hơn.</span></footer>
@@ -211,6 +213,7 @@ export function App() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [user?.id]);
+  if (location.pathname === '/welcome') return <WelcomePage />;
   if (location.pathname === '/guest') return <GuestHome signedIn={Boolean(user)} />;
   if (loading || connectionError) return <main className="loading-screen"><Brand />{loading ? <><LoaderCircle className="spin" /><p>Đang mở không gian của bạn…</p></> : <><p role="alert">{connectionError}</p><button className="primary-button" onClick={() => { setLoading(true); setConnectionError(''); void refresh(true); }}>Thử kết nối lại <ArrowRight size={16} /></button></>}<Link className="guest-entry" to="/guest">Dùng ghi chú trên máy</Link></main>;
   const onAuthenticated = (next: User, delivery?: string) => {

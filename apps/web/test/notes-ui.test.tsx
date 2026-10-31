@@ -55,6 +55,15 @@ beforeEach(() => {
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
 
+test('welcome landing stays accessible without an API connection and links to real entry points', async () => {
+  respond = () => { throw new Error('API offline'); };
+  render(<MemoryRouter initialEntries={['/welcome']}><App /></MemoryRouter>);
+  assert.ok(await screen.findByRole('heading',{name:'Ý tưởng có chỗ ở.'}));
+  assert.equal(screen.getByRole('link',{name:'Bắt đầu ghi chú'}).getAttribute('href'),'/guest');
+  assert.equal(screen.getByRole('link',{name:'Tạo tài khoản'}).getAttribute('href'),'/register');
+  assert.equal(calls.some(call=>call.url.startsWith('/api/notes')),false);
+});
+
 test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
   mount();
   const actor = user();
