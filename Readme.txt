@@ -12,7 +12,7 @@ MSSV thành viên 2:   [CẦN ĐIỀN]
 Repository GitHub: https://github.com/rumnopro0809/503073-final-project
 URL ứng dụng online: [CHƯA TRIỂN KHAI - điền sau khi deploy]
 Hạn nộp: trước 23:59 ngày 02/11/2026
-Ngày hoàn thành tài liệu: 31/10/2026
+Ngày hoàn thành tài liệu: 01/11/2026
 
 
 ----------------------------------------------------------------------
@@ -190,8 +190,9 @@ Các mục sau chưa có hoặc mới một phần, không tính là đã hoàn 
 - Triển khai online (mục 32): chưa có URL công khai hoặc Docker Compose.
 - SMTP thật và PostgreSQL server riêng chưa được kiểm chứng trong bộ
   test tự động; local dùng file mail và PGlite.
-- Chưa kiểm tra thủ công đầy đủ trên ba cỡ màn hình và toàn bộ luồng
-  chia sẻ/bảo vệ ghi chú.
+- Chưa chụp thủ công đủ ba cỡ màn hình 375px, 768px, 1440px. Luồng
+  chia sẻ A→B, mở khóa ghi chú, đính kèm và sáng/tối đã thử ngày
+  01/11 trên trình duyệt.
 
 Các mục đã có code nhưng cần demo trong video mới được tính điểm:
 xác minh email, quên/đặt lại mật khẩu, hồ sơ/avatar, đính kèm, bảo vệ
@@ -214,10 +215,11 @@ Build frontend và backend:
 
     npm.cmd run build
 
-Kết quả gần nhất ngày 31/10/2026:
+Kết quả gần nhất ngày 01/11/2026:
 - 125/125 bài test đạt.
-- TypeScript và build đạt.
-- Build tạo build/web và build/api.
+- TypeScript và build đạt; build tạo build/web và build/api.
+- Lighthouse trên workspace đã đăng nhập: Accessibility 100,
+  Best Practices 100, SEO 100.
 
 Chạy bản build chỉ sau khi đã cấu hình đủ môi trường production:
 

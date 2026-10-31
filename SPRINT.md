@@ -10,6 +10,14 @@ Hạn được người dùng xác nhận lại ngày 31/10/2026: **trước 23:
 - Rủi ro lớn nhất: phần lớn code mới **chưa commit** và hồ sơ nộp (`Rubric.xlsx`, `demo.mp4`, `Readme.txt`, ảnh Insights) chưa có. Ưu tiên đóng gói hồ sơ trước khi làm thêm tính năng.
 - Xem `STATUS_2026-10-31.md` để biết chi tiết và `RUBRIC_SELF_ASSESSMENT.md` để đối chiếu 32 mục.
 
+## Cập nhật thực tế ngày 01/11
+
+- Đã commit và push toàn bộ source còn dang dở: `0040f46` (tài khoản, đính kèm, bảo vệ, chia sẻ, seed), `06604b3` (tài liệu), `3dc7888` (tương phản và tên truy cập). Working tree sạch, `origin/main` khớp local.
+- Đã kiểm tra trên trình duyệt thật: đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B quyền đọc/ghi, mở khóa ghi chú bảo vệ, đính kèm, sáng/tối và ghi chú khách sau khi tải lại.
+- Lighthouse sau khi sửa: Accessibility **100**, Best Practices **100**, SEO **100**; 125/125 test và build đạt.
+- Đã tạo `DEMO_02_11.md` (kịch bản quay) và `SUBMISSION_CHECKLIST.md` (đóng gói, kiểm tra máy sạch, câu hỏi vấn đáp).
+- Còn lại: chụp 3 cỡ màn hình, điền `Rubric.xlsx`, quay `demo.mp4`, chụp Insights, MSSV thành viên 2 và URL online. Không thêm tính năng mới trừ khi còn thời gian sau khi hồ sơ xong.
+
 ## Ưu tiên triển khai
 
 Hoàn thiện và ghép từng luồng chạy xuyên suốt theo rubric. Không nhận một hạng mục là xong chỉ vì có giao diện hoặc API; cần chạy đúng, xử lý lỗi và có tình huống demo. Mục tiêu vẫn là đề bài, không thêm chức năng ngoài phạm vi để làm đẹp hồ sơ.

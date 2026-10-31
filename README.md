@@ -4,9 +4,11 @@
 
 ## Trạng thái
 
-Cập nhật ngày 31/10/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
+Cập nhật ngày 01/11/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
 
-Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **125 bài test đạt**, TypeScript và build đạt.
+Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **125 bài test đạt**, TypeScript và build đạt. Lighthouse ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
+
+Đã kiểm chứng thủ công trên trình duyệt: đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, đính kèm, sáng/tối và ghi chú khách sau khi tải lại.
 
 Chưa hoàn thành: cộng tác thời gian thực bằng WebSocket/Yjs, AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ) và triển khai online. SMTP thật và PostgreSQL server riêng chưa được kiểm chứng; local dùng PGlite và thư lưu ở `.data/mail`. Hạn nộp là **trước 23:59 ngày 02/11/2026**.
 
@@ -18,6 +20,8 @@ Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/ru
 - [Rà soát tiến độ ngày 31/10/2026](STATUS_2026-10-31.md)
 - [Tự đánh giá 32 tiêu chí và kịch bản demo](RUBRIC_SELF_ASSESSMENT.md)
 - [Bảng tự đánh giá dạng CSV để mở bằng Excel](RUBRIC_SELF_ASSESSMENT.csv)
+- [Kịch bản quay demo ngày 02/11](DEMO_02_11.md)
+- [Checklist đóng gói và nộp bài](SUBMISSION_CHECKLIST.md)
 - [Hướng dẫn chạy và thông tin chấm bài](Readme.txt)
 - [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
 - [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
@@ -62,9 +66,10 @@ Chi tiết cách chấm và cấu hình email nằm trong [Readme.txt](Readme.tx
 
 ## Hồ sơ nộp
 
-- `Readme.txt` là bản hướng dẫn chạy và thông tin chấm bài; cần điền họ tên, MSSV và tài khoản demo trước khi nộp.
+- `Readme.txt` là bản hướng dẫn chạy và thông tin chấm bài; còn thiếu MSSV thành viên 2 và URL online.
 - `RUBRIC_SELF_ASSESSMENT.md` là bản nháp tự đánh giá 32 tiêu chí; điểm chính thức vẫn phải điền vào `Rubric.xlsx` theo mẫu của thầy và chỉ tính khi chức năng đã được demo trong video.
-- `demo.mp4` và ảnh GitHub Insights chưa có trong project; xem `STATUS_2026-10-31.md` để biết các việc còn lại.
+- `DEMO_02_11.md` là kịch bản quay video theo từng mục rubric; `SUBMISSION_CHECKLIST.md` là danh sách đóng gói và kiểm tra trước khi nộp.
+- `demo.mp4`, `Rubric.xlsx` và ảnh GitHub Insights chưa có trong project; xem `SUBMISSION_CHECKLIST.md` để biết các việc còn lại.
 
 ## Công nghệ sử dụng
 
