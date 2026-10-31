@@ -4,18 +4,26 @@
 
 ## Trạng thái
 
-Ngày 30/10/2026: có tài khoản và luồng ghi chú tạo → tự lưu → tải lại → sửa, dùng chung editor, xóa có xác nhận, lưới/danh sách và phân trang. Tự lưu có thử lại an toàn, đối chiếu xung đột và đăng nhập lại giữ bản nháp. Đã thêm tìm kiếm trực tiếp trong tiêu đề/nội dung, ghim theo thời điểm ghim, quản lý nhãn màu, gắn nhiều nhãn, lọc kết hợp và sắp xếp. Giao diện có thanh tìm kiếm, bộ lọc rõ ràng và trạng thái không có kết quả. Đã bổ sung nhắc việc tùy chọn, thời gian, quan trọng, tick hoàn thành và việc hằng ngày: đỏ khi quá hạn, vàng khi sắp hạn/quan trọng, xanh lá khi hoàn thành. Thông báo trong ứng dụng cập nhật khi trang đang mở; chưa có push khi đóng trình duyệt. Đã có chế độ khách tự lưu cục bộ, tách riêng với ghi chú tài khoản trên máy chủ; giao diện gọn, thanh tạo nhanh và vùng soạn tập trung. Tự lưu và xác minh email được giữ theo yêu cầu mới nhất. Đã thêm hiệu ứng GSAP khi mở form/editor/nhãn, đổi danh sách và phản hồi thao tác; tôn trọng giảm chuyển động. Dấu Quan trọng có màu hổ phách/ngôi sao độc lập với hạn việc; nhãn có nền màu và chuyển lưới/danh sách dùng GSAP Flip. Đã có sidebar tìm kiếm/phân loại, Cài đặt hiển thị, Về ứng dụng và Đăng xuất; bộ lọc phân loại chạy trước phân trang ở cả server và cục bộ. Landing /welcome có hành trình năm cảnh vector/GSAP theo lựa chọn không dùng video AI tính phí; mobile dùng cảnh tĩnh. 110 bài test, TypeScript và build đạt. Local dùng PostgreSQL nhúng; SMTP thật, server PostgreSQL riêng, triển khai công khai và các mục rubric còn lại vẫn cần hoàn thiện/kiểm chứng. Hạn nộp là 23:59 ngày 03/11/2026; demo thử ngày 31/10.
+Cập nhật ngày 31/10/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
+
+Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **125 bài test đạt**, TypeScript và build đạt.
+
+Chưa hoàn thành: cộng tác thời gian thực bằng WebSocket/Yjs, AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ) và triển khai online. SMTP thật và PostgreSQL server riêng chưa được kiểm chứng; local dùng PGlite và thư lưu ở `.data/mail`. Hạn nộp là **trước 23:59 ngày 02/11/2026**.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 
 ## Tài liệu
 
 - [Yêu cầu và 32 tiêu chí nghiệm thu](REQUIREMENTS.md)
+- [Rà soát tiến độ ngày 31/10/2026](STATUS_2026-10-31.md)
+- [Tự đánh giá 32 tiêu chí và kịch bản demo](RUBRIC_SELF_ASSESSMENT.md)
+- [Bảng tự đánh giá dạng CSV để mở bằng Excel](RUBRIC_SELF_ASSESSMENT.csv)
+- [Hướng dẫn chạy và thông tin chấm bài](Readme.txt)
 - [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
 - [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
 - [Database và API ghi chú ngày 27 tháng 10](DAY_02.md)
 - [Giao diện và điểm ghép tự lưu cho Thái](FRONTEND_HANDOFF.md)
-- [Sprint tới hạn nộp ngày 3 tháng 11](SPRINT.md)
+- [Sprint tới hạn nộp ngày 2 tháng 11](SPRINT.md)
 - [Kịch bản demo thử ngày 31 tháng 10](DEMO_31_10.md)
 
 ## Chạy local
@@ -36,17 +44,41 @@ npm.cmd test
 npm.cmd run build
 ```
 
-## Công nghệ đề xuất
+## Tài khoản và dữ liệu mẫu
 
-- Giao diện: React, TypeScript, Vite.
+Sau khi `npm.cmd run dev` đang chạy, mở terminal thứ hai và chạy:
+
+```powershell
+npm.cmd run seed:demo
+```
+
+Script tạo hai tài khoản demo và dữ liệu mẫu (nhãn, ghi chú, đính kèm, ghi chú bảo vệ, chia sẻ), có thể chạy lại mà không nhân đôi dữ liệu:
+
+- Tài khoản A: `rumnopro0809@gmail.com` / `Rum@1234`
+- Tài khoản B: `duongphamthai82@gmail.com` / `Thai@1234`
+- Mật khẩu ghi chú "Ghi chú bảo mật": `Note@1234`
+
+Chi tiết cách chấm và cấu hình email nằm trong [Readme.txt](Readme.txt).
+
+## Hồ sơ nộp
+
+- `Readme.txt` là bản hướng dẫn chạy và thông tin chấm bài; cần điền họ tên, MSSV và tài khoản demo trước khi nộp.
+- `RUBRIC_SELF_ASSESSMENT.md` là bản nháp tự đánh giá 32 tiêu chí; điểm chính thức vẫn phải điền vào `Rubric.xlsx` theo mẫu của thầy và chỉ tính khi chức năng đã được demo trong video.
+- `demo.mp4` và ảnh GitHub Insights chưa có trong project; xem `STATUS_2026-10-31.md` để biết các việc còn lại.
+
+## Công nghệ sử dụng
+
+Đã tích hợp và đang chạy:
+
+- Giao diện: React, TypeScript, Vite, GSAP, `@fontsource` (self-host font).
 - Máy chủ: Node.js, Express, TypeScript.
-- Cơ sở dữ liệu: PostgreSQL.
-- Cộng tác: WebSocket và Yjs để xử lý thay đổi đồng thời.
-- Offline: service worker và IndexedDB; thiết kế cache và đồng bộ theo quyền truy cập.
-- Email: SMTP; AI: gọi LLM từ backend, cấu hình thông tin dịch vụ qua biến môi trường.
-- Môi trường chạy: Docker Compose; đồng thời chuẩn bị triển khai HTTPS online.
+- Cơ sở dữ liệu: PostgreSQL; local dùng PGlite nhúng tại `.data/postgres`.
+- Tài khoản: bcrypt, cookie phiên HttpOnly, Nodemailer.
+- Email: Nodemailer; local ghi tệp tại `.data/mail`, SMTP thật chưa cấu hình.
 
-React, TypeScript, Vite, Express, bcrypt, cookie phiên, PostgreSQL/PGlite và Nodemailer đã được tích hợp ở bước tài khoản. Các phần cộng tác, offline, AI và Docker vẫn là kế hoạch tiếp theo. Dependency được khóa trong package.json và package-lock.json. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
+Đã cài dependency nhưng **chưa ghép**: `ws`/Yjs cho cộng tác thời gian thực.
+
+Chưa tích hợp: AI/LLM, service worker/IndexedDB cho offline đầy đủ, Docker Compose và triển khai HTTPS online. Dependency được khóa trong package.json và package-lock.json. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
 
 ## Luồng đầu tiên cần hoàn thành
 

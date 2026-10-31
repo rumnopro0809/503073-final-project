@@ -3,7 +3,7 @@
 ## Dữ kiện và giới hạn
 
 - Ngày lập: 16/10/2026, múi giờ Việt Nam.
-- Hạn nộp được xác nhận lại ngày 29/10: 23:59 ngày 03/11/2026, giờ Việt Nam. Mốc 18/11 trước đây là ước tính đã được thay thế; kế hoạch hiện hành ở SPRINT.md.
+- Hạn nộp được xác nhận lại ngày 31/10: trước 23:59 ngày 02/11/2026, giờ Việt Nam. Mốc 03/11 và 18/11 trước đây đã được thay thế; kế hoạch hiện hành ở SPRINT.md.
 - Hai người, mỗi người 1–2 giờ/ngày: khoảng 66–132 giờ công cho 33 ngày.
 - Chủ tài khoản GitHub đã xác nhận: rumnopro0809; repository 503073-final-project đã được tạo ở chế độ riêng tư.
 - Thành viên còn lại là Thái, phụ trách tự lưu theo phân công; chưa có username GitHub trong chat. Thời gian có thể tăng cho sprint, chưa chốt số giờ cụ thể.
@@ -18,9 +18,9 @@ Cập nhật 29/10/2026: người dùng yêu cầu trợ lý triển khai luôn 
 
 ## Bốn tuần đóng góp liên tiếp
 
-Lưu ý cập nhật 29/10: bảng dưới là lịch tham chiếu ban đầu, có mốc sau hạn nộp mới 03/11 nên không còn là lịch làm việc hiện hành. Giữ đúng yêu cầu đóng góp thật của đề và đối chiếu lịch sử đã có; dùng SPRINT.md để tổ chức công việc còn lại.
+Lưu ý cập nhật 31/10: bảng dưới là lịch tham chiếu ban đầu, có mốc sau hạn nộp mới 02/11 nên không còn là lịch làm việc hiện hành. Giữ đúng yêu cầu đóng góp thật của đề và đối chiếu lịch sử đã có; dùng SPRINT.md để tổ chức công việc còn lại.
 
-Các khoảng dưới đây đều là thứ Hai đến Chủ nhật và đều nằm trước mốc nộp dự kiến. Chỉ dùng làm bằng chứng nếu nằm trong giai đoạn phát triển chính thức do thầy quy định.
+Các khoảng dưới đây đều là thứ Hai đến Chủ nhật. Với hạn mới **02/11**, tuần 1–2 vẫn có thể dùng làm bằng chứng nếu nằm trong giai đoạn phát triển chính thức do thầy quy định; tuần 3–4 nằm sau hạn nộp nên không thể tính cho project này. Không tạo commit để lấp các tuần đã qua.
 
 | Tuần | Thời gian | Người 1 | Người 2 |
 | --- | --- | --- | --- |
@@ -38,9 +38,9 @@ Tổng tối thiểu là 8 commit/người và 16 commit/nhóm, nhưng đủ t�
 | 16/10–18/10 | Repo, nhận diện Git đúng tài khoản, đọc đề cùng nhau, thiết kế dữ liệu và giao diện; dựng ứng dụng tối thiểu và thử lưu dữ liệu; thử nhỏ WebSocket/Yjs để nhận diện rủi ro |
 | 19/10–25/10 | Luồng tài khoản và tạo/sửa/xóa ghi chú tự lưu chạy xuyên suốt; tiếp tục hồ sơ, email xác minh/reset, responsive; thử triển khai sớm |
 | 26/10–01/11 | Hoàn thiện ghi chú cơ bản, nhãn, tìm kiếm, ghim, đính kèm; khóa ghi chú và chia sẻ theo quyền; chốt mô hình dữ liệu đồng bộ và kiểm tra quyền ở backend |
-| 02/11–08/11 | Cộng tác WebSocket không ghi đè mất thay đổi; offline và đồng bộ cơ bản; tích hợp AI Summary và Q&A có nguồn |
-| 09/11–15/11 | Hoàn thiện các mục còn thiếu, xử lý lỗi/mất mạng/xung đột/thu hồi quyền; kiểm tra đủ 32 mục, thử Docker Compose và triển khai online ổn định |
-| 16/11–18/11 | Dành phần lớn thời gian cho demo, Readme, rubric, tài khoản có dữ liệu mẫu, ảnh Insights, clone sạch giữ .git, kiểm tra ZIP và luyện vấn đáp; nộp trước giờ hạn thực tế |
+| 02/11–08/11 | (Không còn áp dụng — sau hạn nộp 02/11) |
+| 09/11–15/11 | (Không còn áp dụng — sau hạn nộp 02/11) |
+| 16/11–18/11 | (Không còn áp dụng — sau hạn nộp 02/11) |
 
 Mốc này cần điều chỉnh ngay khi có ngày/giờ nộp chính xác hoặc phát hiện khối lượng lớn hơn dự kiến. Đưa một bản tối thiểu lên online sớm; không để đến cuối mới phát hiện vấn đề môi trường.
 
