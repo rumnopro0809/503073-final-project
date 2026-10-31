@@ -190,9 +190,10 @@ Các mục sau chưa có hoặc mới một phần, không tính là đã hoàn 
 - Triển khai online (mục 32): chưa có URL công khai hoặc Docker Compose.
 - SMTP thật và PostgreSQL server riêng chưa được kiểm chứng trong bộ
   test tự động; local dùng file mail và PGlite.
-- Chưa chụp thủ công đủ ba cỡ màn hình 375px, 768px, 1440px. Luồng
-  chia sẻ A→B, mở khóa ghi chú, đính kèm và sáng/tối đã thử ngày
-  01/11 trên trình duyệt.
+- Chưa chụp thủ công đủ ba cỡ màn hình 375px, 768px, 1440px và chưa
+  thử tải video MP4/WebM. Các luồng đăng ký, xác minh email, quên mật
+  khẩu, chia sẻ A→B, mở khóa ghi chú, tải PNG/TXT và sáng/tối đã thử
+  ngày 01/11 trên trình duyệt.
 
 Các mục đã có code nhưng cần demo trong video mới được tính điểm:
 xác minh email, quên/đặt lại mật khẩu, hồ sơ/avatar, đính kèm, bảo vệ

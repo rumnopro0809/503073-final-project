@@ -12,10 +12,10 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 
 | ID | Tiêu chí | Điểm | Trạng thái | Tự đánh giá | Bằng chứng chính | Cách demo |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Đăng ký tài khoản | 0,25 | Đạt, cần demo | 0,25 | `apps/api/src/auth.ts`, `apps/api/test/auth.test.ts` | Đăng ký tài khoản mới; thử email trùng, mật khẩu nhập lại sai. |
-| 2 | Kích hoạt tài khoản qua email | 0,25 | Một phần | 0,15 | `auth.ts` verify/resend, `mail.ts`; local lưu `.data/mail` | Đăng ký, mở tệp `.txt` mới nhất, mở liên kết, thử dùng lại liên kết. Chưa có SMTP thật. |
+| 1 | Đăng ký tài khoản | 0,25 | Đạt, đã thử 01/11 | 0,25 | `apps/api/src/auth.ts`, `apps/api/test/auth.test.ts` | Đăng ký tài khoản mới; thử email trùng, mật khẩu nhập lại sai. Đã tạo một tài khoản thử và hệ thống tự đăng nhập. |
+| 2 | Kích hoạt tài khoản qua email | 0,25 | Một phần, đã thử local | 0,15 | `auth.ts` verify/resend, `mail.ts`; local lưu `.data/mail` | Đăng ký, mở tệp `.txt` mới nhất, mở liên kết, thử dùng lại liên kết. Đã xác minh thành công qua mail local; chưa có SMTP thật. |
 | 3 | Đăng nhập và đăng xuất | 0,25 | Đạt, cần demo | 0,25 | `auth.ts` login/logout/session; test phiên hết hạn | Đăng nhập, tải lại trang, đăng xuất, dùng lại cookie cũ. |
-| 4 | Khôi phục mật khẩu qua email | 0,25 | Đạt, cần demo | 0,25 | `auth.ts` forgot/reset, `PasswordRecovery.tsx`, test reset một lần | Yêu cầu liên kết, mở từ `.data/mail`, đặt mật khẩu mới, đăng nhập thủ công. |
+| 4 | Khôi phục mật khẩu qua email | 0,25 | Đạt, đã thử 01/11 | 0,25 | `auth.ts` forgot/reset, `PasswordRecovery.tsx`, test reset một lần | Yêu cầu liên kết, mở từ `.data/mail`, đặt mật khẩu mới, đăng nhập thủ công. Đã đổi mật khẩu và đăng nhập lại thành công. |
 | 5 | Xem hồ sơ và avatar | 0,25 | Đạt, cần demo | 0,25 | `ProfilePanel.tsx`, `GET /api/auth/avatar`, test avatar | Mở hồ sơ; xem avatar mặc định/chữ cái và avatar đã tải. |
 | 6 | Cập nhật hồ sơ và avatar | 0,25 | Đạt, cần demo | 0,25 | `PATCH /auth/profile`, `POST/DELETE /auth/avatar`, test upload | Đổi tên hiển thị; tải PNG/JPEG/WebP; dùng lại avatar mặc định. |
 | 7 | Đổi mật khẩu tài khoản | 0,25 | Đạt, cần demo | 0,25 | `POST /auth/change-password`, test revoke session | Đổi với mật khẩu hiện tại sai/đúng; kiểm tra các phiên cũ bị đăng xuất. |
@@ -26,8 +26,8 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 | 12 | Sửa ghi chú | 0,25 | Đạt, cần demo | 0,25 | `PATCH /api/notes/:id`, kiểm tra version | Sửa nội dung, tải lại và mở lại. |
 | 13 | Xóa ghi chú | 0,25 | Đạt, cần demo | 0,25 | `DELETE /api/notes/:id`, test xác nhận xóa | Bấm xóa, chọn Hủy; sau đó xóa thật và tải lại. |
 | 14 | Tự động lưu ghi chú | 0,25 | Đạt, cần demo | 0,25 | `NoteAutosaver.ts`, `useNoteAutosave.ts`, test debounce/retry/conflict | Gõ và chờ Đã lưu; tải lại; thử mất mạng để thấy bản nháp được giữ. |
-| 15 | Đính kèm ảnh/video | 0,25 | Đạt, cần demo | 0,25 | `attachments.ts`, `NoteAttachments.tsx`, test upload/quyền | Tải PNG và MP4; xem trước; tải xuống; xóa. |
-| 16 | Đính kèm tệp | 0,25 | Đạt, cần demo | 0,25 | `attachments.ts`, `NoteAttachments.tsx`, test tệp | Tải PDF/TXT, tải xuống và kiểm tra giới hạn dung lượng. |
+| 15 | Đính kèm ảnh/video | 0,25 | Đạt, đã thử tải PNG | 0,25 | `attachments.ts`, `NoteAttachments.tsx`, test upload/quyền | Tải PNG và MP4; xem trước; tải xuống; xóa. Đã tải PNG, thấy ảnh xem trước, tải lại đúng 70 byte. |
+| 16 | Đính kèm tệp | 0,25 | Đạt, đã thử tải TXT | 0,25 | `attachments.ts`, `NoteAttachments.tsx`, test tệp | Tải PDF/TXT, tải xuống và kiểm tra giới hạn dung lượng. Đã tải TXT và tải lại đúng nội dung. |
 | 17 | Ghim ghi chú lên đầu | 0,25 | Đạt, cần demo | 0,25 | `notes.ts` ORDER BY pinned trước; `localNotes.ts`; test thứ tự ghim | Ghim hai ghi chú, ghim mới nhất trước; ghim vẫn trên mục quá hạn. |
 | 18 | Biểu tượng trạng thái đặc biệt | 0,25 | Đạt, cần demo | 0,25 | Badge ghim/khóa/chia sẻ/quan trọng trong `NotesWorkspace.tsx` | Xem badge ở lưới và danh sách; mở ghi chú được chia sẻ/bảo vệ. |
 | 19 | Tìm kiếm ghi chú | 0,25 | Đạt, cần demo | 0,25 | Tìm trong `notes.ts`, debounce ở workspace, test tìm kiếm | Gõ từ chỉ có trong nội dung; xóa từ khóa; thử không có kết quả. |
@@ -51,7 +51,10 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 
 | Nội dung | Kết quả |
 | --- | --- |
+| Đăng ký → xác minh email | Tạo tài khoản thử, tự đăng nhập, banner chưa xác minh; mở link trong `.data/mail` thì banner biến mất và báo xác minh thành công. Tài khoản thử này không dùng để chấm. |
+| Quên / đặt lại mật khẩu | Gửi yêu cầu, mở link trong `.data/mail`, đặt mật khẩu mới, đăng nhập lại bằng mật khẩu mới thành công. |
 | Đăng nhập / đăng xuất | Đăng nhập A, tải lại vẫn giữ phiên; đăng xuất quay về chế độ khách. |
+| Tải ảnh và tệp | Tải PNG 70 byte và TXT qua giao diện; ảnh có xem trước, cả hai tải xuống đúng nội dung; xoá ghi chú xoá kèm tệp. |
 | Lưới / danh sách | Mặc định lưới; chuyển danh sách giữ nguyên 6 ghi chú và editor. |
 | Tìm kiếm | Gõ “Express” trả 2 ghi chú đúng nội dung, không cần nút Search. |
 | Chia sẻ A → B | B thấy thông báo “2 ghi chú được chia sẻ mới”, mở đúng khu vực; ghi chú quyền sửa cho nhập liệu, ghi chú quyền đọc ở trạng thái `readOnly`. |
@@ -61,7 +64,7 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 | Ghi chú khách | Tạo ghi chú, tải lại vẫn còn; chỉ gọi `/api/auth/me`, không gọi API ghi chú. |
 | Lighthouse | Accessibility **100**, Best Practices **100**, SEO **100** sau khi sửa tương phản và `aria-label`. |
 
-Chưa kiểm tra bằng công cụ: ba cỡ màn hình 375/768/1440 (cửa sổ browser trong app không cho đổi viewport), upload ảnh/video mới, đăng ký → xác minh → quên mật khẩu bằng thao tác tay.
+Chưa kiểm tra bằng công cụ: ba cỡ màn hình 375/768/1440 (cửa sổ browser trong app không cho đổi viewport) và tải video MP4/WebM (mới thử PNG và TXT).
 
 ## Tổng hợp điểm
 

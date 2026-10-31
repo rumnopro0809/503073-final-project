@@ -8,7 +8,7 @@ Cập nhật ngày 01/11/2026. Phần lõi đã chạy được: đăng ký, đ�
 
 Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **125 bài test đạt**, TypeScript và build đạt. Lighthouse ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
 
-Đã kiểm chứng thủ công trên trình duyệt: đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, đính kèm, sáng/tối và ghi chú khách sau khi tải lại.
+Đã kiểm chứng thủ công trên trình duyệt: đăng ký, xác minh email, quên/đặt lại mật khẩu, đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, tải PNG/TXT, sáng/tối và ghi chú khách sau khi tải lại.
 
 Chưa hoàn thành: cộng tác thời gian thực bằng WebSocket/Yjs, AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ) và triển khai online. SMTP thật và PostgreSQL server riêng chưa được kiểm chứng; local dùng PGlite và thư lưu ở `.data/mail`. Hạn nộp là **trước 23:59 ngày 02/11/2026**.
 
