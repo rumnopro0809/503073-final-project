@@ -5,6 +5,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     root: fileURLToPath(new URL('.', import.meta.url)),
+    // Local assessment previews must not be copied into the public deployment.
+    publicDir: mode === 'production' ? 'public-site' : 'public',
     server: {
       host: 'localhost', port: Number(env.WEB_PORT || 5173), strictPort: true,
       fs: { deny: ['.env', '.env.*', '*.{crt,pem,key}', '**/.git/**', '**/.data/**'] },

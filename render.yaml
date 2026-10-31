@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: notes-503073
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "true"
+      - key: MAIL_TRANSPORT
+        value: disabled
+      - key: DATABASE_URL
+        fromDatabase:
+          name: notes-503073-db
+          property: connectionString
+databases:
+  - name: notes-503073-db
+    region: singapore
+    plan: free
+    databaseName: notes503073
+    user: notes503073
+    ipAllowList: []

@@ -7,6 +7,7 @@ import { config } from './config.js';
 export type SendVerification = (email: string, activationUrl: string) => Promise<void>;
 
 async function sendAccountMail(email: string, subject: string, text: string) {
+  if (config.mailTransport === 'disabled') throw new Error('Email delivery is not configured on this deployment.');
   const message = {
     from: config.mailFrom, to: email, subject, text,
   };
