@@ -7,6 +7,7 @@ const check="const {config,validateConfig}=await import('./build/api/config.js')
 const valid=run({},check);assert.equal(valid.status,0,valid.stderr);assert.deepEqual(JSON.parse(valid.stdout.trim().split('\n').at(-1)),{host:'0.0.0.0',port:10000,url:'https://notes.example.test'});
 for(const values of [{MAIL_TRANSPORT:'file'},{DATABASE_URL:''},{RENDER_EXTERNAL_URL:'http://notes.example.test'},{PORT:'invalid'},{MAIL_TRANSPORT:'smtp',SMTP_HOST:''}]) assert.notEqual(run(values,check).status,0,'Unsafe production configuration was accepted.');
 assert.equal(run({},"const {sendVerification}=await import('./build/api/mail.js');try{await sendVerification('test@example.test','https://notes.example.test');process.exitCode=1;}catch{process.exitCode=0;}").status,0);
+assert.equal(run({MAIL_TRANSPORT:'smtp',SMTP_HOST:'smtp.example.test',SMTP_PORT:'2525',SMTP_SECURE:'false'},"import assert from 'node:assert/strict';const mailer=(await import('nodemailer')).default;mailer.createTransport=(options)=>{assert.equal(options.requireTLS,true);assert.equal(options.secure,false);assert.equal(options.port,2525);return {sendMail:async()=>({})};};const {sendVerification}=await import('./build/api/mail.js');await sendVerification('test@example.test','https://notes.example.test');").status,0);
 assert.equal(fs.existsSync('build/web/robots.txt'),true);
 assert.equal(fs.existsSync('build/web/rubric-preview.htm'),false);
 assert.equal(fs.existsSync('build/web/rubric-preview_files'),false);
