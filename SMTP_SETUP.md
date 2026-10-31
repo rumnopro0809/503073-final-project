@@ -1,6 +1,26 @@
 # Gửi email thật trên Render
 
-Nodemailer đã tích hợp cho xác minh email và đặt lại mật khẩu. Bản online hiện dùng MAIL_TRANSPORT=disabled; chưa gửi được thư thật.
+## Cấu hình hiện hành: Mailjet
+
+Đã chuyển phương án từ Brevo sang Mailjet vì người dùng không nhận được OTP Brevo. Nhập trực tiếp trên Render, không đưa key vào Git/chat:
+
+```dotenv
+MAIL_TRANSPORT=smtp
+MAIL_FROM=Ghi chu <email đã xác minh trong Mailjet>
+SMTP_HOST=in-v3.mailjet.com
+SMTP_PORT=2525
+SMTP_SECURE=false
+SMTP_USER=<Mailjet API Key>
+SMTP_PASS=<Mailjet Secret Key>
+```
+
+Trên Mailjet: Account settings → SMTP and SEND API settings để lấy credentials; xác minh địa chỉ gửi trong Domains and Senders. Chỉ kết luận email thật hoạt động sau khi nhận thư trong inbox và mở link thành công trên bản online. Health 200 không chứng minh SMTP thành công.
+
+render.yaml dùng MAIL_TRANSPORT sync:false để không ghi đè giá trị đã thiết lập trong dashboard khi đồng bộ Blueprint. Hướng dẫn Brevo bên dưới chỉ giữ làm tham khảo, không dùng lẫn host hoặc key hai dịch vụ.
+
+Nguồn Mailjet: https://documentation.mailjet.com/hc/en-us/articles/360043229473-How-can-I-configure-my-SMTP-parameters ; https://dev.mailjet.com/docs/smtp-relay/configuration
+
+Nodemailer đã tích hợp cho xác minh email và đặt lại mật khẩu. Cấu hình Mailjet đang được nghiệm thu; chưa ghi nhận gửi thư thật thành công.
 
 ## Chuẩn bị tài khoản
 
@@ -25,7 +45,7 @@ Giữ nguyên DATABASE_URL, TRUST_PROXY, NODE_ENV, HOST và URL hiện có. Save
 
 Render Free chặn cổng 25/465/587; Brevo hỗ trợ 2525. Đây là cấu hình cần thử từ Render thực tế, chưa khẳng định kết nối thành công trước khi test gửi thư. Nếu Brevo chưa kích hoạt tài khoản/sender, hoàn tất phần đó trước.
 
-render.yaml hiện còn khai MAIL_TRANSPORT=disabled cho khởi tạo an toàn. Sau khi chốt SMTP, cần đổi khai báo Blueprint này sang sync:false để lần sync sau không ghi đè thiết lập smtp; không đưa SMTP key vào YAML.
+render.yaml hiện dùng sync:false cho MAIL_TRANSPORT. Chọn smtp trên dashboard khi đã có đủ thông tin dịch vụ; không đưa key vào YAML.
 
 ## Nghiệm thu
 
