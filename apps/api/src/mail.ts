@@ -28,7 +28,20 @@ async function sendAccountMail(email: string, subject: string, text: string) {
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
     connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000,
   });
-  await transporter.sendMail(message);
+  try {
+    const result = await transporter.sendMail(message);
+    const accepted = (result.accepted ?? []).some((recipient: string | {address?: string}) =>
+      (typeof recipient === 'string' ? recipient : recipient.address ?? '').toLowerCase() === email.toLowerCase());
+    if (!accepted) throw Object.assign(new Error('SMTP did not accept the recipient.'), {code:'ERECIPIENT'});
+    console.info('SMTP_ACCEPTED: recipient accepted by relay; inbox delivery is not yet confirmed.');
+  } catch (failure) {
+    const error = failure as {code?: unknown; responseCode?: unknown};
+    // Never log SMTP credentials, reset/activation URLs, recipient addresses or raw server responses.
+    const code = typeof error.code === 'string' && /^[A-Z_]+$/.test(error.code) ? error.code : 'UNKNOWN';
+    const responseCode = typeof error.responseCode === 'number' ? error.responseCode : null;
+    console.error('SMTP_FAILED', {code, responseCode});
+    throw failure;
+  }
 }
 
 export const sendVerification: SendVerification = (email, activationUrl) => sendAccountMail(email, 'Xác minh tài khoản Ghi chú',

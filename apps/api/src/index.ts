@@ -12,6 +12,7 @@ const app = createApp({ db, appUrl: config.appUrl, production: config.production
 const server = app.listen(config.port, config.host, () => {
   console.info(`API ready at http://${config.host}:${config.port}`);
   console.info(config.databaseUrl ? 'Database: PostgreSQL server' : 'Database: embedded PostgreSQL (.data/postgres)');
+  console.info(`Mail transport: ${config.mailTransport}; SMTP port: ${Number(process.env.SMTP_PORT || 587)}; credentials configured: ${Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)}`);
 });
 let stopping = false;
 async function shutdown() {

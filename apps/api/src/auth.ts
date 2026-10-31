@@ -242,7 +242,10 @@ export function authRouter(options: AuthOptions) {
   router.post('/resend-verification', limiter(5), async (req, res) => {
     const user = await currentUser(req);
     if (!user) { res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' }); return; }
-    if (user.email_verified_at) { res.json({ emailDelivery: 'sent' }); return; }
+    if (user.email_verified_at) {
+      console.info('VERIFICATION_SKIPPED: account already verified; no email sent.');
+      res.json({ emailDelivery: 'not-needed', message: 'Tài khoản đã được xác minh; không cần gửi thêm thư.' }); return;
+    }
     const activationUrl = await db.transaction(sql => createVerification(sql, user.id));
     const emailDelivery = await deliver(user.email, activationUrl);
     res.status(emailDelivery === 'sent' ? 200 : 503).json({ emailDelivery,
