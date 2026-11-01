@@ -1252,7 +1252,7 @@ form .primary-button {
 .note-label-picker summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #756182; font-size: 12px; cursor: pointer; list-style: none; }
 .note-label-picker summary::-webkit-details-marker { display: none; }
 .note-label-picker summary::after { content: '+'; margin-left: auto; font-size: 17px; }
-.note-label-picker[open] summary::after { content: '−'; }
+.note-label-picker[open] summary::after { content: 'âˆ’'; }
 .note-label-picker summary > span { display: grid; place-items: center; min-width: 20px; height: 20px; border-radius: 5px; background: #f0e9f7; color: #71558c; font-size: 11px; }
 .note-label-picker summary:focus-visible { outline: 2px solid #ae95c5; outline-offset: 3px; border-radius: 7px; }
 .note-label-picker fieldset { border: 0; border-top: 1px solid #eee8f1; margin: 0; padding: 8px 12px; max-height: 220px; overflow: auto; }
@@ -1320,30 +1320,6 @@ form .primary-button {
   }
 
 }
-/* Task colors always carry a text status as well. */
-.note-card.task-urgent, .task-urgent { background: #fff5cf; border-color: #d7ad42; }
-.note-card.task-overdue, .task-overdue { background: #ffe6e6; border-color: #ce7777; }
-.note-card.task-daily { background: #eaf3ff; border-color: #8aaed1; }
-.note-card.task-done { background: #edf5ef; border-color: #9dbba4; }
-.task-badge { display: inline-block; margin: 0 8px 10px 0; font-size: 12px; font-weight: 600; color: #624c1d; }
-.task-overdue .task-badge { color: #9b3030; }
-.task-done .task-badge { color: #38664b; }
-.task-deadline { display: block; margin-bottom: 10px; font-size: 12px; color: #65576f; }
-.note-reminder { border: 1px solid #ddd4e6; border-radius: 10px; padding: 14px; margin: 16px 0; min-width: 0; }
-.note-reminder legend { color: #655178; font-size: 13px; padding: 0 6px; }
-.reminder-options, .reminder-time { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
-.reminder-options label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
-.reminder-options input { accent-color: #6551a4; width: 18px; height: 18px; }
-.reminder-time { margin-top: 14px; }
-.reminder-time label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
-.reminder-time input { border: 1px solid #d7cce2; border-radius: 7px; padding: 10px; font: inherit; max-width: 100%; color: #393243; }
-.reminder-time input:focus-visible { outline: 2px solid #a18bc7; }
-.note-reminder > p, .reminder-notifications > p { font-size: 12px; line-height: 1.8; color: #73657d; }
-.reminder-notifications { padding: 18px; border: 1px solid #dfc77c; border-radius: 12px; background: #fffbef; margin: 0 0 24px; }
-.reminder-notifications h2 { font-size: 16px; margin: 0; }
-.reminder-notification { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #d7ad42; }
-.reminder-notification .quiet-button { white-space: normal; text-align: left; font-size: 12px; overflow-wrap: anywhere; }
-@media(max-width:720px) { .reminder-time { align-items: stretch; } .reminder-time label { width: 100%; } .reminder-time input { font-size: 16px; width: 100%; } }
 /* Compact workspace, with writing and search as the primary actions. */
 .note-card { transition: background .18s, border-color .18s, box-shadow .18s; }
 .workspace-header { position: sticky; top: 0; z-index: 5; background: #faf9f6f5; backdrop-filter: blur(12px); padding: 14px clamp(18px,4vw,64px); }
@@ -1353,8 +1329,6 @@ form .primary-button {
 .workspace-intro p { flex: 1; min-width: 240px; margin: 0; font-size: 12px; }
 .workspace-intro > .quiet-button { font-size: 12px; }
 .storage-badge { border-radius: 20px; background: #eee7f6; padding: 7px 12px; font-size: 12px; color: #655178; }
-.guest-entry { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 14px; margin: 15px 0; border: 1px solid #e1d8eb; border-radius: 9px; color: #655178; font-size: 13px; }
-.guest-entry small { flex-basis: 100%; text-align: center; color: #84758e; font-size: 11px; }
 .quick-note { display: flex; align-items: center; gap: 14px; width: min(100%,640px); margin: 4px auto 24px; padding: 17px 20px; border: 1px solid #dcd5e3; border-radius: 9px; background: #fff; color: #796b84; box-shadow: 0 3px 10px #38244e0b; text-align: left; }
 .quick-note span { margin-left: auto; font-size: 11px; color: #8c8095; }
 .notes-toolbar { margin-bottom: 18px; }
@@ -1373,8 +1347,6 @@ form .primary-button {
   .workspace-header .brand { font-size: 20px; }
   .account-bar { flex-wrap: wrap; justify-content: flex-end; }
   .account-bar .storage-badge { display: none; }
-  .guest-workspace .account-bar { gap: 5px; }
-  .guest-workspace .account-bar button { font-size: 11px; padding: 9px; }
   .workspace-intro h1 { font-size: 20px; }
   .workspace-intro p { min-width: 0; flex-basis: 100%; }
   .quick-note { margin-bottom: 18px; }
@@ -1408,15 +1380,8 @@ form .primary-button {
 .note-card p { color: #70667d; line-height: 1.8; }
 .note-card:hover { border-color: #ab97ca; box-shadow: 0 10px 26px #57416e17; }
 .note-card.selected { border-color: #8160b0; box-shadow: 0 0 0 2px #8160b022, 0 8px 24px #57416e0e; }
-.note-card.task-urgent { background: #fff6dc; border-color: #e5c06a; }
-.note-card.task-overdue { background: #fff0f0; border-color: #dc9696; }
-.note-card.task-daily { background: #eef5ff; border-color: #adc5e4; }
-.note-card.task-done { background: #eff8f1; border-color: #b1d3bb; }
-.note-card.note-important { border-top: 4px solid #d89413; }
 .important-badge { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 5px 10px; border: 1px solid #e6b14c; border-radius: 7px; background: #ffe9b0; color: #7a4900; font-size: 11px; font-weight: 700; line-height: 1.5; }
 .note-card > .important-badge { margin: -2px 0 12px; }
-.reminder-options .important-toggle { padding: 8px 11px; border: 1px solid #e5d6b6; border-radius: 9px; color: #8d621b; background: #fffaf0; }
-.reminder-options .important-toggle.active { border-color: #dca338; background: #ffe9b0; color: #7a4900; }
 .important-toggle input { accent-color: #b77908; }
 .colored-label { color: color-mix(in srgb, var(--label-color) 72%, black); border-color: color-mix(in srgb, var(--label-color) 35%, white); background: color-mix(in srgb, var(--label-color) 13%, white); font-weight: 600; padding: 5px 9px; }
 .label-important { color: #7a4900; background: #ffe9b0; border-color: #e6b14c; }
@@ -1426,7 +1391,6 @@ form .primary-button {
 .note-editor-heading h2 { font-size: 16px; }
 .note-editor-fields input { font-size: 18px; border-color: #e7e0ee; background: #fdfcff; }
 .note-editor-fields textarea { background: #fdfcff; border-color: #e7e0ee; font-size: 15px; }
-.note-reminder { background: #faf8fd; border-radius: 12px; }
 .organization-feedback { background: #eaf4ed; border: 1px solid #c5dfcd; border-radius: 10px; padding: 12px 16px; color: #38644a; }
 .label-manager { border-radius: 16px; background: #fff; box-shadow: 0 7px 25px #49305b09; }
 .empty-notes { background: #ffffffa6; border-color: #ded9e7; }
@@ -1451,9 +1415,6 @@ form .primary-button {
 .sidebar-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border: 0; border-radius: 10px; background: transparent; color: #756880; font-size: 13px; text-align: left; line-height: 1.5; }
 .sidebar-item:hover { background: #f5f1fa; color: #62468c; }
 .sidebar-item[aria-current=page] { background: #eee6fa; color: #634190; font-weight: 600; box-shadow: inset 3px 0 #9976c4; }
-.sidebar-item.category-important { color: #9c6b13; }
-.sidebar-item.category-important[aria-current=page] { background: #fff1cb; box-shadow: inset 3px 0 #d3a03d; color: #835405; }
-.sidebar-item.category-overdue { color: #b05b62; }
 .sidebar-labels { border-top: 1px solid #ede8f2; border-bottom: 1px solid #ede8f2; margin: 16px 0 12px; padding: 15px 0; }
 .sidebar-labels .filter-select { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0 10px 10px; }
 .sidebar-labels .filter-select > span { font-size: 11px; color: #74677f; }
@@ -1513,7 +1474,7 @@ form .primary-button {
 .account-links { margin-top:22px; color:var(--purple); text-decoration:underline; }
 @media(max-width:720px) { .account-page { padding:16px 12px; } .profile-panel { padding:20px; } .workspace-panel input { font-size:16px; } }
 .preferences-fields { border:0; padding:0; margin:0; display:grid; gap:18px; min-width:0; }
-.note-card:not(.task-overdue):not(.task-urgent):not(.task-done):not(.task-daily):not(.note-important) { background:var(--note-background,#fffdf7); }
+.note-card { background:var(--note-background,#fffdf7); }
 :root[data-theme=dark] { color-scheme:dark; background:#191820; color:#eeeaf5; --ink:#eeeaf5; --muted:#b8b2c5; --border:#46404f; --purple:#c6acf6; }
 :root[data-theme=dark] body,:root[data-theme=dark] .workspace { background:#191820; color:#eeeaf5; }
 :root[data-theme=dark] .workspace-header,:root[data-theme=dark] .workspace-sidebar,:root[data-theme=dark] .workspace-panel,:root[data-theme=dark] .note-editor,:root[data-theme=dark] .label-manager,:root[data-theme=dark] .notes-search,:root[data-theme=dark] .quick-note { background:#25222e; color:#eeeaf5; border-color:#46404f; }

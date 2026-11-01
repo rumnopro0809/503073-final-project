@@ -23,7 +23,7 @@ export function PasswordRecovery({ reset = false, onReset }: { reset?: boolean; 
     } finally { setBusy(false); }
   }
   return <main className="account-page"><section className="workspace-panel recovery-panel">
-    <Link to="/welcome" className="brand">ghi chú.</Link>
+    <Link to="/login" className="brand">ghi chú.</Link>
     <h1>{reset ? 'Đặt lại mật khẩu' : 'Bạn quên mật khẩu?'}</h1>
     <p>{reset ? 'Nhập mật khẩu mới hai lần. Sau khi hoàn tất, bạn cần đăng nhập lại.' : 'Nhập email tài khoản để nhận liên kết đặt lại mật khẩu.'}</p>
     {message && <p className="notice success" role="status">{message}</p>}

@@ -6,10 +6,12 @@ import path from 'node:path';
 
 const root = process.cwd();
 const base = process.env.SEED_API_URL || 'http://127.0.0.1:3001/api';
+const local=['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname);
+if(!local&&(process.env.SEED_ALLOW_REMOTE!=='true'||!process.env.SEED_A_EMAIL||!process.env.SEED_B_EMAIL||!process.env.SEED_A_PASSWORD||!process.env.SEED_B_PASSWORD))throw new Error('Remote seed requires SEED_ALLOW_REMOTE=true and dedicated SEED_A/B_EMAIL/PASSWORD. Never seed personal accounts online.');
 const headers = { 'content-type': 'application/json', 'x-requested-with': 'GhiChu' };
 
-const accountA = { displayName: 'Nguyễn Hải Triều', email: 'rumnopro0809@gmail.com', password: 'Rum@1234' };
-const accountB = { displayName: 'Dương Phạm Thái', email: 'duongphamthai82@gmail.com', password: 'Thai@1234' };
+const accountA = { displayName: local?'Nguyễn Hải Triều':'Tài khoản chấm A', email:process.env.SEED_A_EMAIL||'rumnopro0809@gmail.com', password:process.env.SEED_A_PASSWORD||'Rum@1234' };
+const accountB = { displayName: local?'Dương Phạm Thái':'Tài khoản chấm B', email:process.env.SEED_B_EMAIL||'duongphamthai82@gmail.com', password:process.env.SEED_B_PASSWORD||'Thai@1234' };
 const notePassword = 'Note@1234';
 
 function cookieFrom(response) {
@@ -22,6 +24,7 @@ async function request(cookie, url, options = {}) {
     headers: { ...headers, ...(cookie ? { cookie } : {}) },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     redirect: 'manual',
+    signal:AbortSignal.timeout(45000),
   });
   const text = await response.text();
   let json;
@@ -53,6 +56,7 @@ function latestVerificationLink(email) {
 }
 
 async function verifyEmail(cookie, email) {
+  if(!local){console.log('- Tài khoản chấm online chưa xác minh email; chức năng vẫn dùng đầy đủ.');return;}
   await request(cookie, '/auth/resend-verification', { method: 'POST', body: {} });
   const link = latestVerificationLink(email);
   if (!link) {
@@ -127,11 +131,8 @@ async function main() {
   const n6 = await ensureNote(sessionA.cookie, notes, 'Tài liệu tham khảo', 'Danh sách tài liệu:\n- Express: https://expressjs.com/\n- PostgreSQL: https://www.postgresql.org/docs/\n- Vite: https://vite.dev/guide/');
 
   await patchNote(sessionA.cookie, n1, 'organization', { pinned: true, labelIds: [study.id, work.id] });
-  await patchNote(sessionA.cookie, n2, 'reminder', { dueAt: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 19) + 'Z', important: true });
   await patchNote(sessionA.cookie, n2, 'organization', { labelIds: [study.id] });
-  await patchNote(sessionA.cookie, n3, 'reminder', { daily: true });
   await patchNote(sessionA.cookie, n3, 'organization', { labelIds: [personal.id] });
-  await patchNote(sessionA.cookie, n4, 'reminder', { completed: true });
   await patchNote(sessionA.cookie, n6, 'organization', { labelIds: [study.id] });
   if (!n5.protected) await patchNote(sessionA.cookie, n5, 'organization', { labelIds: [work.id] });
 
@@ -167,6 +168,8 @@ async function main() {
   console.log(`  A: ${accountA.email} / ${accountA.password}`);
   console.log(`  B: ${accountB.email} / ${accountB.password}`);
   console.log(`  Ghi chú bảo mật dùng mật khẩu: ${notePassword}`);
+  await request(sessionA.cookie,'/auth/logout',{method:'POST',body:{}});
+  await request(sessionB.cookie,'/auth/logout',{method:'POST',body:{}});
 }
 
 main().catch(error => {

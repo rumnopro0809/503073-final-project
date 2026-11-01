@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X, Star, Clock, CalendarDays, CheckCircle2, Settings, Info, LogOut, UserRound, LockKeyhole, Share2 } from 'lucide-react';
+import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X, Settings, Info, LogOut, UserRound, LockKeyhole, Share2 } from 'lucide-react';
 import { api as serverApi, ApiError } from '../api';
 import type { Label, Note, NoteDraft, NoteSort, NotesResponse } from '../types/notes';
 import { NoteEditor } from './NoteEditor';
 import { useNoteAutosave } from '../hooks/useNoteAutosave';
 import { createNoteServices } from '../notesApi';
-import { localApi, GUEST_KEY } from '../localNotes';
 import { LabelManager, type LabelAction } from './LabelManager';
 import { NoteOrganization } from './NoteOrganization';
-import { NoteReminder, type ReminderChanges } from './NoteReminder';
-import { priority, taskState, taskLabel, formatDue, isCompleted, inCategory, type NoteCategory } from '../reminders';
 import { useEntrance } from '../hooks/useEntrance';
 import { useCardLayout } from '../hooks/useCardLayout';
-import { ImportantBadge, LabelChip } from './LabelChip';
+import { LabelChip } from './LabelChip';
 import { normalizePreferences, type Preferences } from '../preferences';
 import { NoteAttachments } from './NoteAttachments';
 import { NoteSecurity, type ProtectionChange } from './NoteSecurity';
@@ -22,18 +19,16 @@ import {NoteSummary} from './NoteSummary';
 import {NoteQuestions} from './NoteQuestions';
 
 interface Props {
-  guest?: boolean;
   onLogout?: () => void; onAccount?: () => void; preferenceKey?: string;
   onSessionExpired: () => void; onDirtyChange: (dirty: boolean) => void;
   authenticationRevision?: number; beforeLeaveRef?: MutableRefObject<(() => Promise<boolean>) | null>;
 }
 const PAGE_SIZE = 50;
 const messageOf = (error: unknown) => error instanceof Error ? error.message : 'Không tải được ghi chú. Vui lòng thử lại.';
-type Filters = { q: string; pinned: boolean; labelId: string; sort: NoteSort; category?: NoteCategory; shared?:boolean };
+type Filters = { q: string; pinned: boolean; labelId: string; sort: NoteSort; shared?:boolean };
 function matches(note: Note, filters: Filters) {
   const text = filters.q.toLowerCase();
   return Boolean(note.share)===Boolean(filters.shared) && (!filters.pinned || note.pinned)
-    && inCategory(note, filters.category)
     && (!filters.labelId || (note.labels ?? []).some(label => label.id === filters.labelId))
     && (!text || note.title.toLowerCase().includes(text) || note.content.toLowerCase().includes(text));
 }
@@ -49,12 +44,6 @@ function mergeNotes(filters: Filters, ...groups: Note[][]) {
       const pinnedTime = Date.parse(b.pinnedAt ?? b.updatedAt) - Date.parse(a.pinnedAt ?? a.updatedAt);
       if (pinnedTime) return pinnedTime;
     }
-    const urgency = priority(a) - priority(b);
-    if (urgency) return urgency;
-    if (priority(a) <= 1 && a.dueAt && b.dueAt) {
-      const deadline = Date.parse(a.dueAt) - Date.parse(b.dueAt);
-      if (deadline) return deadline;
-    }
     const sort = filters.sort === 'title' ? (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0)
       : Date.parse(filters.sort === 'created' ? b.createdAt : b.updatedAt) - Date.parse(filters.sort === 'created' ? a.createdAt : a.updatedAt);
     return sort || b.id.localeCompare(a.id);
@@ -66,23 +55,17 @@ function listUrl(filters: Filters, offset: number) {
   if (filters.pinned) params.set('pinned', 'true');
   if (filters.labelId) params.set('labelId', filters.labelId);
   if (filters.sort !== 'updated') params.set('sort', filters.sort);
-  if (filters.category && filters.category !== 'all') params.set('category', filters.category);
   if (filters.shared) params.set('shared','true');
   return `/notes?${params}`;
 }
 
-const categories = [
-  { id: 'all', title: 'Tất cả ghi chú', icon: StickyNote }, { id: 'important', title: 'Quan trọng', icon: Star },
-  { id: 'overdue', title: 'Quá hạn', icon: Clock }, { id: 'upcoming', title: 'Sắp đến hạn', icon: CalendarDays },
-  { id: 'daily', title: 'Hằng ngày', icon: CalendarDays }, { id: 'completed', title: 'Đã hoàn thành', icon: CheckCircle2 },
-] as const;
 function readPreferences(key: string) {
   try {
     const stored = JSON.parse(window.localStorage.getItem(key) ?? '{}');
     return normalizePreferences(stored);
   } catch { return normalizePreferences(); }
 }
-export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, guest = false, onLogout, onAccount, preferenceKey = 'ghichu.display.guest' }: Props) {
+export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, onLogout, onAccount, preferenceKey = 'ghichu.display.account' }: Props) {
   const [panel, setPanel] = useState<'notes' | 'settings' | 'about' | 'qa'>('notes');
   const [preferences, setPreferences] = useState(() => readPreferences(preferenceKey));
   const [preferenceError, setPreferenceError] = useState('');
@@ -93,31 +76,28 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     return () => { delete document.documentElement.dataset.theme; };
   }, [preferences.theme]);
   useEffect(() => {
-    if (guest) return;
     const controller = new AbortController();
     const revision = preferenceRevision.current;
     void serverApi<{preferences:Preferences}>('/auth/preferences',undefined,{signal:controller.signal}).then(result => {
       if (result.preferences && revision === preferenceRevision.current) setPreferences(normalizePreferences(result.preferences));
     }).catch(error => { if (!controller.signal.aborted) setPreferenceError('Chưa tải được tùy chọn tài khoản. Bạn có thể thay đổi và thử lưu lại.'); });
     return () => controller.abort();
-  }, [guest, preferenceKey]);
+  }, [preferenceKey]);
   async function updatePreferences(next: typeof preferences) {
     preferenceRevision.current++;
     setPreferences(next);
     try { window.localStorage.setItem(preferenceKey, JSON.stringify(next)); setPreferenceError(''); }
     catch { setPreferenceError('Tùy chọn đã áp dụng cho lần mở này; trình duyệt chưa cho phép lưu lại.'); }
-    if (!guest) {
+    {
       setPreferenceBusy(true);
       try { await serverApi('/auth/preferences',next,{method:'PATCH'}); setPreferenceError(''); }
       catch { setPreferenceError('Đã áp dụng trên trang nhưng chưa đồng bộ tài khoản. Chọn lại tùy chọn khi có mạng để thử lưu.'); }
       finally { setPreferenceBusy(false); }
     }
   }
-  const api = guest ? localApi : serverApi;
+  const api = serverApi;
   const { notesApi, labelsApi } = useMemo(() => createNoteServices(api), [api]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [reminders, setReminders] = useState<Note[]>([]);
-  const [reminderError, setReminderError] = useState('');
   const [clock, setClock] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setClock(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
   const [pagination, setPagination] = useState<NotesResponse['pagination'] | null>(null);
@@ -132,19 +112,17 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [labelId, setLabelId] = useState('');
   const [sort, setSort] = useState<NoteSort>('updated');
-  const [category, setCategory] = useState<NoteCategory>('all');
   const [shared,setShared]=useState(false);
   const [sharedCount,setSharedCount]=useState(0);
   const [lockedId,setLockedId]=useState<string|null>(null);
   const [unlockPassword,setUnlockPassword]=useState('');
   const [unlockBusy,setUnlockBusy]=useState(false);
   useEffect(()=>{
-    if(guest)return;const controller=new AbortController();
+    const controller=new AbortController();
     void serverApi<{count:number}>('/notes/shared-notifications',undefined,{signal:controller.signal}).then(result=>setSharedCount(result.count??0)).catch(()=>{});
     return()=>controller.abort();
-  },[guest,clock,authenticationRevision]);
-  const categoryClock = ['overdue','upcoming','daily','completed'].includes(category) ? clock : 0;
-  const filters: Filters = { q: query, pinned: pinnedOnly, labelId, sort, category, shared };
+  },[clock,authenticationRevision]);
+  const filters: Filters = { q: query, pinned: pinnedOnly, labelId, sort, shared };
   const filtersRef = useRef(filters); filtersRef.current = filters;
   const [labels, setLabels] = useState<Label[]>([]);
   const [labelsError, setLabelsError] = useState('');
@@ -154,16 +132,15 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const labelManagerButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const [actionMessage, setActionMessage] = useState('');
-  const filtered = Boolean(query || pinnedOnly || labelId || category !== 'all');
+  const filtered = Boolean(query || pinnedOnly || labelId);
   const container = useRef<HTMLElement>(null);
   const visibleNotes = mergeNotes(filters, notes);
   const cardIds = visibleNotes.map(note => note.id).join('|');
-  useEntrance(container, '.note-card, .empty-notes', [loading, query, pinnedOnly, labelId, sort, category, cardIds, panel]);
+  useEntrance(container, '.note-card, .empty-notes', [loading, query, pinnedOnly, labelId, sort, cardIds, panel]);
   const captureLayout = useCardLayout(container, view);
   function changeView(next: 'grid' | 'list') { if (next !== view) { captureLayout(); setView(next); } }
   useEntrance(container, '.organization-feedback', [actionMessage]);
   useEntrance(container, '.workspace-panel', [panel]);
-  useEntrance(container, '.reminder-notifications', [reminders.map(note => note.id).join('|')]);
   useEffect(() => {
     const timeout = setTimeout(() => setQuery(search.trim()), 250);
     return () => clearTimeout(timeout);
@@ -181,15 +158,8 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     if (removedIds.current.has(note.id)) return;
     recentSaves.current.set(note.id, { note, revision: ++saveRevision.current });
     setNotes(current => mergeNotes(filtersRef.current, current, [note]));
-    setReminders(current => [...current.filter(item => item.id !== note.id), note].filter(item => !isCompleted(item) && item.dueAt && Date.parse(item.dueAt) <= Date.now() + 86400000));
   }, []);
   const autosave = useNoteAutosave({ onSaved, onAuthenticationRequired: onSessionExpired, authenticationRevision, transport: notesApi });
-  useEffect(() => {
-    if (!guest) return;
-    const refresh = (event: StorageEvent) => { if (event.key === GUEST_KEY || event.key === null) { setReload(value => value + 1); setLabelsReload(value => value + 1); } };
-    window.addEventListener('storage', refresh);
-    return () => window.removeEventListener('storage', refresh);
-  }, [guest]);
   const editor = autosave.state;
   const [liveNote,setLiveNote]=useState<Note|null>(null);
   const [liveDirty,setLiveDirty]=useState(false);
@@ -207,22 +177,6 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   }, [editor, navigationBusy]);
 
   const dirty = Boolean(editor?.dirty || editor?.saving || liveDirty);
-  useEffect(() => {
-    const controller = new AbortController();
-    const revision = saveRevision.current;
-    api<{ notes: Note[] }>('/notes/reminders', undefined, { signal: controller.signal }).then(result => {
-      if (controller.signal.aborted) return;
-      const saved = [...recentSaves.current.values()].filter(entry => entry.revision > revision).map(entry => entry.note);
-      setReminders(mergeNotes({ q: '', pinned: false, labelId: '', sort: 'updated' }, Array.isArray(result.notes) ? result.notes : [], saved)
-        .filter(note => !removedIds.current.has(note.id) && !isCompleted(note) && note.dueAt && Date.parse(note.dueAt) <= Date.now() + 86400000));
-      setReminderError('');
-    }).catch(failure => {
-      if (controller.signal.aborted) return;
-      if (failure instanceof ApiError && failure.status === 401) onSessionExpired();
-      else setReminderError('Chưa cập nhật được nhắc việc. Bấm Tải lại để thử lại.');
-    });
-    return () => controller.abort();
-  }, [clock, reload, authenticationRevision, onSessionExpired]);
   const prepareToLeave = useCallback(async () => {
     if (navigating.current) return false;
     navigating.current = true; setNavigationBusy(true);
@@ -281,7 +235,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       })
       .finally(() => { if (!controller.signal.aborted && generation === listGeneration.current) setLoading(false); });
     return () => { controller.abort(); moreController.current?.abort(); };
-  }, [reload, onSessionExpired, authenticationRevision, query, pinnedOnly, labelId, sort, category, categoryClock,shared]);
+  }, [reload, onSessionExpired, authenticationRevision, query, pinnedOnly, labelId, sort,shared]);
 
   useEffect(() => () => { detailController.current?.abort(); detailGeneration.current++; }, []);
 
@@ -377,7 +331,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     catch(failure){setEditorError(messageOf(failure));}finally{setUnlockBusy(false);}
   }
   function showShared() {
-    setShared(true);setCategory('all');setLabelId('');setPanel('notes');
+    setShared(true);setLabelId('');setPanel('notes');
     void serverApi('/notes/shared-notifications/read',{}).then(()=>setSharedCount(0)).catch(()=>{});
   }
   async function organizeNote(intent: { pinned: boolean } | { labelId: string; checked: boolean }) {
@@ -392,18 +346,6 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       if (autosave.getState()?.note?.id === id) autosave.open(updated);
       setReload(value => value + 1);
       setActionMessage('pinned' in intent ? intent.pinned ? 'Đã ghim ghi chú lên đầu danh sách.' : 'Đã bỏ ghim ghi chú.' : 'Đã cập nhật nhãn của ghi chú.');
-    });
-  }
-  async function changeReminder(changes: ReminderChanges, target?: Note) {
-    const id = target?.id ?? autosave.getState()?.note?.id;
-    if (!id) return false;
-    return organizedAction(async () => {
-      const current = await notesApi.read(id);
-      const updated = await notesApi.reminder(current, changes);
-      onSaved(updated);
-      if (autosave.getState()?.note?.id === id) autosave.open(updated);
-      setReload(value => value + 1);
-      setActionMessage('Đã cập nhật nhắc việc.');
     });
   }
   async function changeLabel(action: LabelAction) {
@@ -434,7 +376,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     });
   }
   function clearFilters() {
-    setSearch(''); setQuery(''); setPinnedOnly(false); setLabelId(''); setCategory('all'); searchInput.current?.focus();
+    setSearch(''); setQuery(''); setPinnedOnly(false); setLabelId(''); searchInput.current?.focus();
   }
   async function deleteNote() {
     if (navigating.current || !editor?.note) return;
@@ -449,7 +391,6 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       catch (failure) { if (!(failure instanceof ApiError && failure.status === 404)) throw failure; }
       removedIds.current.add(id); recentSaves.current.delete(id);
       setNotes(current => current.filter(note => note.id !== id));
-      setReminders(current => current.filter(note => note.id !== id));
       restoreNewFocus.current = true; autosave.close(); cancelOpening();
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 401) onSessionExpired();
@@ -487,35 +428,26 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
           onChange={event => { setSearch(event.target.value); setPanel('notes'); }} />
         {search && <button type="button" className="icon-button" aria-label="Xóa từ khóa tìm kiếm" onClick={() => { setSearch(''); setQuery(''); searchInput.current?.focus(); }}><X size={15} /></button>}
       </div>
-      <nav className="sidebar-navigation" aria-label="Nhóm ghi chú">{categories.map(item => <button key={item.id} type="button"
-        className={`sidebar-item category-${item.id}`} aria-current={panel === 'notes' && category === item.id ? 'page' : undefined}
-        onClick={() => { setShared(false);setCategory(item.id); setPanel('notes'); }}><item.icon size={18} />{item.title}</button>)}
-        {!guest&&<button type="button" className="sidebar-item" aria-current={shared?'page':undefined} onClick={showShared}><Share2 size={18}/>Được chia sẻ với tôi{sharedCount>0?` (${sharedCount} mới)`:''}</button>}</nav>
+      <nav className="sidebar-navigation" aria-label="Nhóm ghi chú">
+        <button type="button" className="sidebar-item" aria-current={panel==='notes'&&!shared?'page':undefined} onClick={()=>{setShared(false);setPanel('notes');}}><StickyNote size={18}/>Tất cả ghi chú</button>
+        <button type="button" className="sidebar-item" aria-current={shared?'page':undefined} onClick={showShared}><Share2 size={18}/>Được chia sẻ với tôi{sharedCount>0?` (${sharedCount} mới)`:''}</button>
+      </nav>
       <div className="sidebar-labels"><label className="filter-select"><span>Lọc theo nhãn</span><select aria-label="Lọc theo nhãn" value={labelId} onChange={event => { setLabelId(event.target.value); setPanel('notes'); }}>
         <option value="">Tất cả nhãn</option>{labels.map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
         <button ref={labelManagerButton} type="button" className="sidebar-item" aria-expanded={showLabels} disabled={navigationBusy}
           onClick={() => { setPanel('notes'); setShowLabels(value => !value); }}><Tag size={18} />Quản lý nhãn</button></div>
       <nav className="sidebar-system" aria-label="Ứng dụng">
-        {!guest&&<button type="button" className="sidebar-item" aria-current={panel==='qa'?'page':undefined} onClick={()=>setPanel('qa')}><StickyNote size={18}/>Hỏi AI</button>}
+        {<button type="button" className="sidebar-item" aria-current={panel==='qa'?'page':undefined} onClick={()=>setPanel('qa')}><StickyNote size={18}/>Hỏi AI</button>}
         <button type="button" className="sidebar-item" aria-current={panel === 'settings' ? 'page' : undefined} onClick={() => setPanel('settings')}><Settings size={18} />Cài đặt</button>
         <button type="button" className="sidebar-item" aria-current={panel === 'about' ? 'page' : undefined} onClick={() => setPanel('about')}><Info size={18} />Về ứng dụng</button>
         {onLogout && <button type="button" className="sidebar-item sidebar-logout" onClick={onLogout}><LogOut size={18} />Đăng xuất</button>}
         {onAccount && <button type="button" className="sidebar-item" onClick={onAccount}><UserRound size={18} />Mở tài khoản</button>}
-      </nav><p className="sidebar-storage">{guest ? 'Lưu trên trình duyệt này' : 'Lưu trên máy chủ'} · Tự lưu</p>
+      </nav><p className="sidebar-storage">Lưu trên máy chủ · Tự lưu</p>
     </aside>
     <div className="workspace-content" hidden={panel !== 'notes'}>
-    {sharedCount>0&&!guest&&<div className="notice success" role="status">Bạn có {sharedCount} ghi chú được chia sẻ mới. <button type="button" className="quiet-button" onClick={showShared}>Xem ghi chú được chia sẻ</button></div>}
-    {reminderError && <p className="field-error">{reminderError}</p>}
-    {reminders.length > 0 && <section className="reminder-notifications" aria-label="Thông báo nhắc việc" aria-live="polite">
-      <h2>Cần bạn chú ý · {reminders.length}{reminders.length === 100 ? '+' : ''}</h2>
-      <p>Nhắc trong ứng dụng khi trang đang mở. Ghi chú ghim luôn ở đầu danh sách.</p>
-      {mergeNotes({ q: '', pinned: false, labelId: '', sort: 'updated' }, reminders).slice(0,5).map(note => <div key={note.id} className={`reminder-notification task-${taskState(note)}`}>
-        <button type="button" className="quiet-button" disabled={navigationBusy} onClick={() => void openNote(note)}>{taskLabel(note)} · {note.title} · {formatDue(note.dueAt!)}</button>
-        <button type="button" className="quiet-button" disabled={navigationBusy} onClick={() => void changeReminder({ completed: true }, note)}>Đánh dấu hoàn thành {note.title}</button>
-      </div>)}
-    </section>}
+    {sharedCount>0&&<div className="notice success" role="status">Bạn có {sharedCount} ghi chú được chia sẻ mới. <button type="button" className="quiet-button" onClick={showShared}>Xem ghi chú được chia sẻ</button></div>}
     <div className="notes-toolbar">
-      <div><h2>{shared?'Được chia sẻ với tôi':category === 'all' ? 'Những điều muốn nhớ' : categories.find(item => item.id === category)?.title}</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
+      <div><h2>{shared?'Được chia sẻ với tôi':'Những điều muốn nhớ'}</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
       <div className="notes-actions">
         <div className="note-view-switch" role="group" aria-label="Kiểu hiển thị ghi chú">
           <button className="icon-button" type="button" aria-label="Xem dạng lưới" aria-pressed={view === 'grid'} onClick={() => changeView('grid')}><Grid2X2 size={17} /></button>
@@ -533,7 +465,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         <option value="updated">Vừa chỉnh sửa</option><option value="created">Mới tạo</option><option value="title">Tiêu đề A–Z</option></select></label>
       {(filtered || search) && <button type="button" className="quiet-button clear-filters" onClick={clearFilters}><X size={14} />Xóa bộ lọc</button>}
     </div>
-    <p className="notes-order-hint"><Pin size={12} />Ghi chú ghim luôn ở đầu, ghim gần nhất trước; tiếp theo là việc quá hạn, sắp đến hạn và quan trọng.</p>
+    <p className="notes-order-hint"><Pin size={12} />Ghi chú ghim luôn ở đầu, ghim gần nhất trước; các ghi chú còn lại theo thứ tự đã chọn, mặc định vừa chỉnh sửa trước.</p>
     {labelsError && <div className="labels-load-error"><p className="notice error" role="alert">Không tải được nhãn: {labelsError}</p>
       <button type="button" className="quiet-button" onClick={() => setLabelsReload(value => value + 1)}>Thử tải nhãn lại</button></div>}
     {showLabels && <LabelManager labels={labels} busy={navigationBusy} onAction={changeLabel} onClose={() => { setShowLabels(false); labelManagerButton.current?.focus(); }} />}
@@ -547,15 +479,14 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       saveStatus={editor.status} saveError={editor.error} fieldErrors={editor.fields}
       onRetry={() => {if(editor.note?.protected&&editor.error?.includes('bảo vệ'))setLockedId(editor.note.id);else void autosave.retry();}} onDelete={editor.note?.share?undefined:() => void deleteNote()}
       organization={<>{editor.note?.share&&<p className="notice success">{editor.note.share.ownerName} chia sẻ · {editor.note.share.permission==='read'?'Chỉ đọc':'Được sửa'} · {new Date(editor.note.share.sharedAt).toLocaleString('vi-VN')}</p>}
-        {!guest&&editor.note&&<button type="button" className="quiet-button" disabled={navigationBusy} onClick={()=>void organizedAction(async()=>{
+        {editor.note&&<button type="button" className="quiet-button" disabled={navigationBusy} onClick={()=>void organizedAction(async()=>{
           const id=autosave.getState()?.note?.id;if(!id)return;
           const fresh=await notesApi.read(id);autosave.close();setLiveNote(fresh);
         })}><Share2 size={15}/>Cộng tác trực tiếp</button>}
         {!editor.note?.share&&<NoteOrganization note={editor.note} labels={labels} disabled={navigationBusy}
         onPin={pinned => void organizeNote({ pinned })} onLabel={(id, checked) => void organizeNote({ labelId: id, checked })}
         onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />}
-        {editor.note && !editor.note.share&&<NoteReminder key={`${editor.note.id}-${editor.note.dueAt}-${editor.note.daily}`} note={editor.note} busy={navigationBusy} onChange={changeReminder} />}
-        {!guest && editor.note && <><NoteSummary key={`summary-${editor.note.id}`} noteId={editor.note.id} version={editor.note.version} dirty={editor.dirty||editor.saving} busy={navigationBusy} onAction={organizedAction}/><NoteAttachments key={editor.note.id} noteId={editor.note.id} readOnly={editor.note.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />
+        {editor.note && <><NoteSummary key={`summary-${editor.note.id}`} noteId={editor.note.id} version={editor.note.version} dirty={editor.dirty||editor.saving} busy={navigationBusy} onAction={organizedAction}/><NoteAttachments key={editor.note.id} noteId={editor.note.id} readOnly={editor.note.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />
           {!editor.note.share&&<><NoteSecurity note={editor.note} busy={navigationBusy} onProtect={protectNote} onLock={()=>void lockNote()}/><NoteShares key={`shares-${editor.note.id}`} noteId={editor.note.id} onAction={organizedAction}/></>}
           {editor.note.share&&editor.note.protected&&<button type="button" className="quiet-button" onClick={()=>void lockNote()}>Khóa lại ghi chú</button>}
         </>}</>} />}
@@ -582,15 +513,12 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         {filtered ? <><p>Thử từ khóa khác hoặc bỏ bớt bộ lọc.</p><button type="button" className="quiet-button" onClick={clearFilters}>Hiện tất cả ghi chú</button></>
           : <p>Bạn chưa có ghi chú nào.<br />Bắt đầu bằng nút Ghi chú mới ở phía trên.</p>}</div>
       : <div className={`notes-grid ${view === 'list' ? 'view-list' : ''}`} aria-label="Danh sách ghi chú">
-        {visibleNotes.map(note => <button type="button" disabled={navigationBusy} className={`note-card task-${taskState(note)} ${note.important ? 'note-important' : ''} ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
+        {visibleNotes.map(note => <button type="button" disabled={navigationBusy} className={`note-card ${editor?.note?.id === note.id ? 'selected' : ''}`} key={note.id}
           onClick={() => void openNote(note)} aria-pressed={editor?.note?.id === note.id} aria-label={`Mở ghi chú ${note.title}`}>
           <span className="note-card-corner">{note.pinned ? <span className="note-pinned-badge"><Pin size={14} />Đã ghim</span> : <StickyNote size={16} />}</span>
           {note.protected&&<span className="note-pinned-badge"><LockKeyhole size={14}/>{note.locked?'Đã khóa':'Có mật khẩu'}</span>}
           {note.share&&<span className="note-pinned-badge"><Share2 size={14}/>{note.share.ownerName} · {note.share.permission==='read'?'Chỉ đọc':'Được sửa'}</span>}
-          {note.important && <ImportantBadge />}
           <h3>{note.title}</h3><p>{note.content}</p>
-          {taskLabel(note) && taskLabel(note) !== 'Quan trọng' && <span className="task-badge">{taskLabel(note)}</span>}
-          {note.dueAt && <span className="task-deadline">Hạn: {formatDue(note.dueAt)}</span>}
           {(note.labels ?? []).length > 0 && <span className="note-labels">{note.labels.map(label => <LabelChip key={label.id} label={label} />)}</span>}
           <time dateTime={note.updatedAt}>Sửa {new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(note.updatedAt))}</time>
         </button>)}
@@ -600,12 +528,12 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       <button type="button" className="quiet-button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? 'Đang tải thêm…' : moreError ? 'Thử tải thêm' : 'Tải thêm ghi chú'}</button>
     </div>}
     </div>
-    {panel==='qa'&&!guest&&<NoteQuestions busy={navigationBusy} onAction={async work=>{
+    {panel==='qa'&&<NoteQuestions busy={navigationBusy} onAction={async work=>{
       let failure:unknown;
       const completed=await organizedAction(async()=>{try{await work();}catch(error){failure=error;throw error;}});
       if(failure)throw failure;return completed;
     }} onOpenSource={id=>{setPanel('notes');void openNote({id},true);}}/>}
-    {panel === 'settings' && <section className="workspace-panel" aria-label="Cài đặt hiển thị"><h2>Cài đặt</h2><p>{guest ? 'Tùy chọn được nhớ trên trình duyệt này.' : 'Tùy chọn được đồng bộ theo tài khoản khi có kết nối.'} Kiểu xem áp dụng cho phiên hiện tại; lần mở mới mặc định là lưới.</p>
+    {panel === 'settings' && <section className="workspace-panel" aria-label="Cài đặt hiển thị"><h2>Cài đặt</h2><p>Tùy chọn được đồng bộ theo tài khoản khi có kết nối. Kiểu xem áp dụng cho phiên hiện tại; lần mở mới mặc định là lưới.</p>
       <fieldset disabled={preferenceBusy} className="preferences-fields"><legend className="sr-only">Tùy chọn hiển thị</legend>
       <label>Mật độ thẻ<select value={preferences.density} onChange={event => updatePreferences({ ...preferences, density: event.target.value })}><option value="comfortable">Thoáng, dễ đọc</option><option value="compact">Gọn, xem nhiều ghi chú</option></select></label>
       <label>Cỡ chữ ghi chú<select value={preferences.fontSize} onChange={event => updatePreferences({ ...preferences, fontSize: Number(event.target.value) })}><option value={14}>Vừa · 14px</option><option value={16}>Lớn · 16px</option><option value={18}>Rất lớn · 18px</option></select></label>
@@ -619,8 +547,6 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     </section>}
     {panel === 'about' && <section className="workspace-panel" aria-label="Về ứng dụng"><h2>Về ghi chú.</h2><p>Không gian cho ý tưởng, công việc và những điều muốn nhớ.</p>
       <dl><dt>Ghi chú tài khoản</dt><dd>Tự lưu trên máy chủ và mở lại bằng cùng tài khoản trên thiết bị khác. Tài khoản chưa xác minh email vẫn dùng đầy đủ chức năng.</dd>
-        <dt>Ghi chú trên máy</dt><dd>Lưu trong trình duyệt này, tách riêng với dữ liệu tài khoản. Xóa dữ liệu trình duyệt sẽ xóa ghi chú cục bộ.</dd>
-        <dt>Nhắc việc</dt><dd>Vàng khi sắp hạn hoặc quan trọng; đỏ khi quá hạn. Thông báo trong ứng dụng cần trang đang mở.</dd>
         <dt>Dự án</dt><dd>503073 · Web Programming &amp; Applications · Nguyễn Hải Triều và Thái.</dd></dl>
       <button type="button" className="quiet-button" onClick={() => setPanel('notes')}>Quay lại ghi chú</button>
     </section>}

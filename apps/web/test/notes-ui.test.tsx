@@ -13,18 +13,13 @@ const { render, screen, cleanup, waitFor, act, fireEvent, within } = await impor
 const { default: userEvent } = await import('@testing-library/user-event');
 const { NotesWorkspace } = await import('../src/components/NotesWorkspace');
 const { NoteEditor } = await import('../src/components/NoteEditor');
-const { NoteReminder } = await import('../src/components/NoteReminder');
-const { taskState, priority } = await import('../src/reminders');
-const { createLocalApi, GUEST_KEY } = await import('../src/localNotes');
-const { createNoteServices } = await import('../src/notesApi');
 const { App } = await import('../src/App');
-const { MemoryRouter } = await import('react-router-dom');
+const { MemoryRouter, useLocation } = await import('react-router-dom');
 const originalFetch = globalThis.fetch;
 const calls: { url: string; method: string; signal?: AbortSignal | null; body?: string; key?: string | null }[] = [];
 let respond: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let respondLabels: (url: string, init?: RequestInit) => Response | Promise<Response>;
 let expired: number;
-let reminderNotes: Note[] = [];
 let preferences = {density:'comfortable',fontSize:14,theme:'light',noteColor:'#fffdf7'};
 let isDirty: boolean;
 const onExpired = () => { expired++; };
@@ -40,7 +35,6 @@ const contentInput = () => screen.getByLabelText<HTMLTextAreaElement>('Nội dun
 
 beforeEach(() => {
   calls.length = 0; expired = 0; isDirty = false;
-  reminderNotes = [];
   preferences = {density:'comfortable',fontSize:14,theme:'light',noteColor:'#fffdf7'};
   window.localStorage.clear();
   window.confirm = () => true;
@@ -48,7 +42,6 @@ beforeEach(() => {
   respondLabels = () => json({ labels: [] });
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
-    if (url === '/api/notes/reminders') return json({ notes: reminderNotes });
     if (url.startsWith('/api/attachments/notes/')) return json({attachments:[]});
     if (url === '/api/auth/preferences') {
       if (init?.method === 'PATCH') preferences = {...preferences,...JSON.parse(String(init.body))};
@@ -62,13 +55,49 @@ beforeEach(() => {
 afterEach(async () => { cleanup(); await act(async () => {}); });
 after(() => { globalThis.fetch = originalFetch; dom.window.close(); });
 
-test('welcome landing stays accessible without an API connection and links to real entry points', async () => {
-  respond = () => { throw new Error('API offline'); };
-  render(<MemoryRouter initialEntries={['/welcome']}><App /></MemoryRouter>);
-  assert.ok(await screen.findByRole('heading',{name:'Ý tưởng có chỗ ở.'}));
-  assert.equal(screen.getByRole('link',{name:'Bắt đầu ghi chú'}).getAttribute('href'),'/guest');
-  assert.equal(screen.getByRole('link',{name:'Tạo tài khoản'}).getAttribute('href'),'/register');
-  assert.equal(calls.some(call=>call.url.startsWith('/api/notes')),false);
+function LocationProbe(){const location=useLocation();return <output data-testid="current-path">{location.pathname}</output>;}
+test('anonymous root and retired guest/welcome routes redirect to login without a guest bypass',async()=>{
+  respond=url=>url==='/api/auth/me'?json({message:'Chưa đăng nhập'},401):json(page([]));
+  for(const path of ['/','/guest','/welcome','/unknown']){
+    render(<MemoryRouter initialEntries={[path]}><App/><LocationProbe/></MemoryRouter>);
+    assert.ok(await screen.findByRole('region',{name:'Đăng nhập tài khoản'}));
+    await waitFor(()=>assert.equal(screen.getByTestId('current-path').textContent,'/login'));
+    assert.equal(screen.queryByRole('region',{name:'Không gian ghi chú'}),null);
+    assert.equal(document.querySelector('a[href="/guest"]'),null);
+    cleanup();
+  }
+});
+test('successful login opens account notes and logout returns to login',async()=>{
+  const account={id:'user-a',email:'student@example.test',displayName:'Sinh viên',emailVerified:true};let signedIn=false;
+  respond=(url,init)=>{
+    if(url==='/api/auth/me')return signedIn?json({user:account}):json({message:'Chưa đăng nhập'},401);
+    if(url==='/api/auth/login'&&init?.method==='POST'){signedIn=true;return json({user:account});}
+    if(url==='/api/auth/logout'){signedIn=false;return new Response(null,{status:204});}
+    return json(page([]));
+  };
+  render(<MemoryRouter initialEntries={['/']}><App/><LocationProbe/></MemoryRouter>);const actor=user();
+  await actor.type(await screen.findByLabelText('Email'),'student@example.test');await actor.type(screen.getByLabelText('Mật khẩu'),'Demo password 2026!');
+  await actor.click(screen.getByRole('button',{name:'Đăng nhập'}));
+  assert.ok(await screen.findByRole('region',{name:'Không gian ghi chú'}));
+  await waitFor(()=>assert.equal(screen.getByTestId('current-path').textContent,'/'));
+  await actor.click(screen.getByRole('button',{name:'Đăng xuất'}));
+  assert.ok(await screen.findByRole('region',{name:'Đăng nhập tài khoản'}));
+  await waitFor(()=>assert.equal(screen.getByTestId('current-path').textContent,'/login'));
+});
+test('auth lookup failure does not expose notes or a guest fallback',async()=>{
+  respond=()=>json({message:'Máy chủ chưa sẵn sàng'},503);
+  render(<MemoryRouter initialEntries={['/guest']}><App/></MemoryRouter>);
+  assert.ok(await screen.findByRole('alert'));assert.equal(screen.queryByRole('region',{name:'Không gian ghi chú'}),null);assert.equal(document.querySelector('a[href="/guest"]'),null);
+});
+test('legacy reminder metadata has no controls, badges or influence on default note ordering',async()=>{
+  const old={...noteA,important:true,dueAt:'2026-01-01T00:00:00Z',updatedAt:'2026-10-01T00:00:00Z'};
+  const recent={...noteB,updatedAt:'2026-10-02T00:00:00Z'};
+  respond=url=>url.includes('?')?json(page([old,recent])):json({note:old});mount();
+  await screen.findByRole('button',{name:'Mở ghi chú Ghi chú B'});
+  assert.deepEqual(within(screen.getByLabelText('Danh sách ghi chú')).getAllByRole('button').map(b=>b.getAttribute('aria-label')),['Mở ghi chú Ghi chú B','Mở ghi chú Ghi chú A']);
+  await user().click(screen.getByRole('button',{name:'Mở ghi chú Ghi chú A'}));
+  for(const name of ['Quá hạn','Sắp đến hạn','Hằng ngày','Đã hoàn thành','Đặt nhắc việc'])assert.equal(screen.queryByRole('button',{name}),null);
+  assert.equal(screen.queryByLabelText('Quan trọng'),null);assert.equal(document.querySelector('.task-deadline'),null);assert.ok(!calls.some(c=>c.url.includes('/reminders')));
 });
 
 test('live collaboration opens from a saved note without HTTP autosave and restores normal navigation',async()=>{
@@ -140,13 +169,12 @@ test('AI Q&A saves a pending draft, renders cited sources safely and opens the o
   assert.ok(calls.filter(call=>call.url==='/api/notes/a').length>=2);
 });
 
-test('AI Q&A shows insufficient evidence and provider errors, and is unavailable in guest mode',async()=>{
+test('AI Q&A shows insufficient evidence and provider errors',async()=>{
   let attempt=0;respond=url=>url==='/api/ai/ask'?(++attempt===1?json({answer:'Chưa đủ thông tin trong ghi chú.',insufficient:true,sources:[]}):json({message:'AI hết hạn mức, thử lại sau.'},429)):url.includes('?')?json(page([])):json({note:noteA});
   mount();const actor=user();await actor.click(screen.getByRole('button',{name:'Hỏi AI'}));let panel=within(screen.getByRole('region',{name:'Hỏi AI về ghi chú'}));
   await actor.type(panel.getByLabelText('Câu hỏi về ghi chú'),'Thiên thạch ở đâu?');await actor.click(panel.getByRole('button',{name:'Hỏi AI'}));
   assert.ok(await panel.findByText('Chưa đủ thông tin trong ghi chú.'));assert.equal(panel.queryByRole('region',{name:'Nguồn ghi chú'}),null);
   await actor.click(panel.getByRole('button',{name:'Hỏi AI'}));assert.ok(await panel.findByText('AI hết hạn mức, thử lại sau.'));
-  cleanup();await act(async()=>{render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty}/>);});assert.equal(screen.queryByRole('button',{name:'Hỏi AI'}),null);
 });
 
 test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
@@ -172,21 +200,6 @@ test('sidebar settings and about keep the editor draft and remember display pref
   assert.equal(screen.getByLabelText<HTMLSelectElement>('Cỡ chữ ghi chú').value,'16');
   assert.equal(screen.getByLabelText<HTMLSelectElement>('Giao diện').value,'dark');
   assert.equal(screen.getByLabelText<HTMLSelectElement>('Màu ghi chú').value,'#e8f1ff');
-});
-
-test('guest and rendered lists keep the latest pin before older urgent pins and unpinned notes', async () => {
-  const notes=[{...noteA,pinned:true,pinnedAt:'2026-10-01T00:00:00Z',dueAt:'2026-10-01T00:00:00Z',important:true},
-    {...noteB,pinned:true,pinnedAt:'2026-10-02T00:00:00Z'},
-    {...noteA,id:'c',title:'Quá hạn chưa ghim',dueAt:'2026-09-01T00:00:00Z',important:true}];
-  window.localStorage.setItem(GUEST_KEY,JSON.stringify({version:1,notes,labels:[],keys:{}}));
-  const request=createLocalApi(window.localStorage);
-  for(const sort of ['updated','created','title']) {
-    assert.deepEqual((await request<NotesResponse>(`/notes?sort=${sort}`)).notes.map(note=>note.id),['b','a','c']);
-    assert.equal((await request<NotesResponse>(`/notes?sort=${sort}&limit=1&offset=1`)).notes[0].id,'a');
-  }
-  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty}/>);
-  await screen.findByRole('button',{name:'Mở ghi chú Ghi chú B'});
-  assert.deepEqual(within(screen.getByLabelText('Danh sách ghi chú')).getAllByRole('button').map(button=>button.getAttribute('aria-label')),['Mở ghi chú Ghi chú B','Mở ghi chú Ghi chú A','Mở ghi chú Quá hạn chưa ghim']);
 });
 
 test('password recovery submits email, validates reset failure and only completes after API success', async () => {
@@ -255,22 +268,6 @@ test('attachments flush before upload and preserve existing files after a failed
   assert.equal(attachments.filter(call=>call.method==='POST').length,1);
 });
 
-test('sidebar category requests retain pagination filters and reset when returning to all notes', async () => {
-  respond = url => {
-    const parsed = new URL(url,'http://local');
-    if (parsed.searchParams.get('category') === 'important') return parsed.searchParams.get('offset') === '50'
-      ? json(page([{...noteB,important:true}],false,50)) : json(page([{...noteA,important:true}],true));
-    return json(page([noteA,noteB]));
-  };
-  mount(); const actor = user();
-  await actor.click(screen.getByRole('button',{name:'Quan trọng'}));
-  await actor.click(await screen.findByRole('button',{name:'Tải thêm ghi chú'}));
-  await screen.findByRole('button',{name:'Mở ghi chú Ghi chú B'});
-  assert.ok(calls.some(call=>call.url.includes('offset=50') && call.url.includes('category=important')));
-  await actor.click(screen.getByRole('button',{name:'Tất cả ghi chú'}));
-  await waitFor(()=>assert.ok(calls.at(-1)?.url.includes('offset=0') && !calls.at(-1)?.url.includes('category=')));
-});
-
 test('GSAP entrance preserves editor focus, does not replay while typing and cleans up on unmount', async () => {
   const { gsap } = await import('gsap');
   const originalMedia = window.matchMedia;
@@ -309,126 +306,6 @@ test('reduced motion leaves the editor visible and focusable with no GSAP tween'
     assert.equal(document.activeElement, titleInput());
     view.unmount();
   } finally { window.matchMedia = original; }
-});
-
-test('important badge stays distinct when a note is overdue or completed', async () => {
-  let note = { ...noteA, important: true, dueAt: new Date(Date.now() - 60000).toISOString() };
-  respond = url => url.includes('?') ? json(page([note])) : json({ note });
-  mount();
-  const card = await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
-  assert.ok(within(card).getByText('Quan trọng').classList.contains('important-badge'));
-  assert.ok(within(card).getByText('Quá hạn'));
-  note = { ...note, completed: true, completedAt: new Date().toISOString() };
-  await user().click(screen.getByRole('button', { name: 'Tải lại' }));
-  const completed = await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' });
-  assert.ok(within(completed).getByText('Quan trọng'));
-  assert.ok(within(completed).getByText('Đã hoàn thành'));
-});
-
-test('guest storage survives reopening, searches and keeps labels and reminders locally', async () => {
-  const request = createLocalApi(window.localStorage);
-  const services = createNoteServices(request);
-  let note = await services.notesApi.create({ title: 'Trên máy', content: 'Nội dung riêng' }, crypto.randomUUID());
-  const label = await services.labelsApi.create({ name: 'Cá nhân', color: '#8b6bb1' });
-  note = await services.notesApi.organize(note, { pinned: true, labelIds: [label.id] });
-  note = await services.notesApi.reminder(note, { dueAt: new Date(Date.now() - 1000).toISOString() });
-  const reopened = createNoteServices(createLocalApi(window.localStorage));
-  assert.equal((await reopened.notesApi.read(note.id)).labels[0].name, 'Cá nhân');
-  assert.equal((await request<NotesResponse>('/notes?q=riêng')).notes.length, 1);
-  assert.equal((await request<{notes: Note[]}>('/notes/reminders')).notes[0].id, note.id);
-  assert.equal((await request<NotesResponse>('/notes?category=overdue')).notes.length,1);
-  assert.equal((await request<NotesResponse>('/notes?category=completed')).notes.length,0);
-  await services.labelsApi.remove(label.id);
-  const retained = await reopened.notesApi.read(note.id);
-  assert.equal(retained.content, 'Nội dung riêng'); assert.deepEqual(retained.labels, []);
-  assert.equal(calls.length, 0);
-});
-
-test('guest writes are versioned and creation retries do not duplicate notes', async () => {
-  const services = createNoteServices(createLocalApi(window.localStorage));
-  const key = crypto.randomUUID(), draft = { title: 'Idempotent', content: 'Local' };
-  const note = await services.notesApi.create(draft,key);
-  assert.equal((await services.notesApi.create(draft,key)).id, note.id);
-  await services.notesApi.update(note, { ...draft, content: 'Updated' });
-  await assert.rejects(services.notesApi.update(note, { ...draft, content: 'Stale' }), (error: unknown) => (error as {status:number}).status === 409);
-  assert.equal((await services.notesApi.read(note.id)).content, 'Updated');
-});
-
-test('blocked or corrupt guest storage reports errors without erasing saved data', async () => {
-  window.localStorage.setItem(GUEST_KEY,'invalid');
-  await assert.rejects(createLocalApi(window.localStorage)('/notes'), /Không đọc được/);
-  assert.equal(window.localStorage.getItem(GUEST_KEY),'invalid');
-  const blocked = createNoteServices(createLocalApi({ getItem: () => null, setItem: () => { throw new Error('quota'); } }));
-  await assert.rejects(blocked.notesApi.create({ title: 'Draft', content: 'Still here' }, crypto.randomUUID()), /bộ nhớ đầy/);
-});
-
-test('guest workspace autosaves without sending note requests to the server', async () => {
-  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty} />);
-  const actor = user();
-  await actor.click(await screen.findByRole('button', { name: 'Ghi chú mới' }));
-  await actor.type(titleInput(), 'Ghi chú khách'); await actor.type(contentInput(), 'Không gửi server');
-  await screen.findByText('Đã lưu', {}, { timeout: 2500 });
-  assert.equal(calls.length, 0);
-  cleanup();
-  render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty} />);
-  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú khách' }));
-  await waitFor(() => assert.equal(contentInput().value, 'Không gửi server'));
-});
-
-test('task urgency colors and completion update at deadlines and Vietnam day boundaries', () => {
-  const now = Date.parse('2026-10-30T12:00:00Z');
-  const overdue = { ...noteA, dueAt: '2026-10-30T11:59:00Z' };
-  assert.equal(taskState(overdue, now), 'overdue');
-  assert.equal(taskState({ ...overdue, completed: true }, now), 'done');
-  assert.equal(taskState({ ...noteA, dueAt: '2026-10-31T11:59:00Z' }, now), 'urgent');
-  assert.equal(taskState({ ...noteA, important: true }, now), 'urgent');
-  assert.equal(priority(overdue, now), 0);
-  const daily = { ...noteA, daily: true, completed: true, completedAt: '2026-10-30T16:59:00Z' };
-  assert.equal(taskState(daily, Date.parse('2026-10-30T16:59:30Z')), 'done');
-  assert.equal(taskState(daily, Date.parse('2026-10-30T17:00:00Z')), 'daily');
-});
-
-test('reminder controls are optional and send explicit date and completion changes', async () => {
-  const changes: unknown[] = [];
-  render(<NoteReminder note={noteA} busy={false} onChange={async value => { changes.push(value); return true; }} />);
-  const actor = user();
-  await actor.click(screen.getByLabelText('Quan trọng'));
-  await actor.click(screen.getByLabelText('Đã hoàn thành'));
-  fireEvent.change(screen.getByLabelText('Thời gian nhắc'), { target: { value: '2026-11-01T12:30' } });
-  await actor.click(screen.getByRole('button', { name: 'Đặt nhắc việc' }));
-  assert.deepEqual(changes, [{ important: true }, { completed: true }, { dueAt: new Date('2026-11-01T12:30').toISOString(), completed: false }]);
-});
-
-test('reminder changes flush text first and completing from a notification removes the alert', async () => {
-  let stored: Note = { ...noteA, dueAt: new Date(Date.now() - 60000).toISOString() };
-  reminderNotes = [stored];
-  respond = (url, init) => {
-    if (url.includes('?')) return json(page([stored]));
-    if (init?.method === 'PATCH') {
-      const body = JSON.parse(String(init.body));
-      if (url.endsWith('/reminder')) {
-        stored = { ...stored, ...body, version: stored.version + 1 };
-        if (body.completed) { stored.completedAt = new Date().toISOString(); reminderNotes = []; }
-      } else stored = { ...stored, title: body.title, content: body.content, version: stored.version + 1 };
-    }
-    return json({ note: stored });
-  };
-  mount();
-  const actor = user();
-  await actor.click(await screen.findByRole('button', { name: 'Mở ghi chú Ghi chú A' }));
-  await waitFor(() => assert.equal(contentInput().value, noteA.content));
-  await actor.type(contentInput(), ' mới');
-  await actor.click(screen.getByLabelText('Quan trọng'));
-  await waitFor(() => assert.equal(stored.important, true));
-  assert.equal(stored.content, `${noteA.content} mới`);
-  const writes = calls.filter(call => call.method === 'PATCH');
-  assert.equal(writes[0].url, '/api/notes/a');
-  assert.equal(writes[1].url, '/api/notes/a/reminder');
-  assert.ok(screen.getByRole('region', { name: 'Thông báo nhắc việc' }));
-  await actor.click(screen.getByRole('button', { name: 'Đánh dấu hoàn thành Ghi chú A' }));
-  await waitFor(() => assert.equal(screen.queryByRole('region', { name: 'Thông báo nhắc việc' }), null));
-  assert.equal(stored.completed, true);
-  assert.equal(contentInput().value, `${noteA.content} mới`);
 });
 
 test('an empty account shows the empty state and opens the shared editor', async () => {

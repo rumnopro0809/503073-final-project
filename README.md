@@ -1,43 +1,30 @@
-# Project quản lý ghi chú môn 503073
+# 503073 — Ứng dụng quản lý ghi chú
 
-Ứng dụng quản lý ghi chú theo đề Final Project học kỳ I năm học 2026–2027. Mục tiêu là đáp ứng 32 tiêu chí của đề, bao gồm tài khoản, ghi chú, chia sẻ, cộng tác thời gian thực, AI, offline và responsive.
+Nguyễn Hải Triều — **524H0072**
+Dương Phạm Thái — **524H0189**
+Học kỳ I, năm học 2026–2027. Hạn nộp: **trước 23:59 ngày 02/11/2026**, giờ Việt Nam.
 
-## Trạng thái
+## Chấm bản online
 
-Cập nhật ngày 01/11/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
-Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **156 bài test đạt**, TypeScript và build đạt. Lighthouse trước khi thêm realtime ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
+Ứng dụng: https://notes-503073.onrender.com/
+Repository: https://github.com/rumnopro0809/503073-final-project (private; cần cấp quyền đọc nếu giảng viên dùng).
 
-Đã kiểm chứng thủ công trên trình duyệt: đăng ký, xác minh email, quên/đặt lại mật khẩu, đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, tải PNG/TXT, sáng/tối và ghi chú khách sau khi tải lại.
+| Tài khoản chấm riêng | Email | Mật khẩu |
+| --- | --- | --- |
+| A — chủ ghi chú | grader-a-503073-8d35d3bc@example.test | Grade-4226f46c-fea-2026! |
+| B — người nhận chia sẻ | grader-b-503073-8d35d3bc@example.test | Grade-d6ecdf67-1c9-2026! |
 
-Đã ghép cộng tác trực tiếp bằng WebSocket/Yjs, lưu snapshot trong PostgreSQL và kiểm tra quyền từng cập nhật. Cách dùng và giới hạn: [REALTIME.md](REALTIME.md). Bản online: https://notes-503073.onrender.com/; SMTP Mailjet đã được người dùng xác nhận nhận thư. Local dùng PGlite và thư lưu ở `.data/mail` khi cấu hình file transport.
+Đây là tài khoản đánh giá, không phải tài khoản cá nhân. Đã kiểm tra đăng nhập và dữ liệu ngày 01/11/2026: A có 6 ghi chú, 3 nhãn, 2 tệp; B có 1 ghi chú riêng và 2 ghi chú được chia sẻ quyền đọc/sửa. Ghi chú **Ghi chú bảo mật** có mật khẩu riêng **Note@1234**.
 
-AI Summary đã có API và nút **Tóm tắt bằng AI** cho ghi chú đã lưu. Backend gọi Google Gemini, kiểm tra quyền/mở khóa và phiên bản; kết quả riêng không ghi đè nội dung. Cần cấu hình `GEMINI_API_KEY` ở server để chạy thật; xem [AI_SUMMARY.md](AI_SUMMARY.md). Test tự động dùng provider giả lập. Ngày 01/11 đã kiểm tra Gemini thật trên Render bằng `scripts/check-summary-online.mjs`, nhận tóm tắt và xác nhận ghi chú gốc không đổi.
+Email example.test của tài khoản chấm không có inbox, nên các tài khoản này chưa xác minh email. Theo yêu cầu, tài khoản chưa xác minh vẫn dùng đầy đủ chức năng. Để kiểm tra gửi thư/xác minh/reset, đăng ký tài khoản mới bằng email thật mà người chấm kiểm soát. Online dùng Mailjet SMTP; người dùng đã xác nhận reset mật khẩu đầy đủ.
 
-AI Q&A đã có trang **Hỏi AI** ở thanh bên: truy xuất ghi chú theo từ khóa, câu trả lời có số nguồn và nút mở ghi chú gốc. Dùng cùng cấu hình Gemini, chỉ dùng ghi chú được phép đọc và đã mở khóa; không đủ bằng chứng thì báo thiếu thông tin. Xem [AI_QA.md](AI_QA.md) để biết giới hạn và cách demo.
+## Chạy từ source trên máy giảng viên
 
-Chưa hoàn thành: offline đầy đủ (service worker/cache tài khoản/đồng bộ). Hạn nộp là **trước 23:59 ngày 02/11/2026**. Các chức năng đã làm vẫn cần xuất hiện trong video demo.
+Yêu cầu Node.js **22.12 trở lên**, khuyến nghị bản **24.21.0** theo .node-version, và npm. Chạy npm ci cần Internet. Không cần cài PostgreSQL hoặc Docker để chạy local: PGlite lưu PostgreSQL nhúng tại .data/postgres; schema/migration trong apps/api/src/database.ts tự chạy khi khởi động.
 
-Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
+Mở terminal trong **source/** (hoặc thư mục repository có package.json).
 
-## Tài liệu
-
-- [Yêu cầu và 32 tiêu chí nghiệm thu](REQUIREMENTS.md)
-- [Rà soát tiến độ ngày 31/10/2026](STATUS_2026-10-31.md)
-- [Tự đánh giá 32 tiêu chí và kịch bản demo](RUBRIC_SELF_ASSESSMENT.md)
-- [Bảng tự đánh giá dạng CSV để mở bằng Excel](RUBRIC_SELF_ASSESSMENT.csv)
-- [Kịch bản quay demo ngày 02/11](DEMO_02_11.md)
-- [Checklist đóng gói và nộp bài](SUBMISSION_CHECKLIST.md)
-- [Hướng dẫn chạy và thông tin chấm bài](Readme.txt)
-- [Lịch triển khai và quy trình làm nhóm](TEAM_PLAN.md)
-- [Chạy ứng dụng và học luồng tài khoản ngày đầu](DAY_01.md)
-- [Database và API ghi chú ngày 27 tháng 10](DAY_02.md)
-- [Giao diện và điểm ghép tự lưu cho Thái](FRONTEND_HANDOFF.md)
-- [Sprint tới hạn nộp ngày 2 tháng 11](SPRINT.md)
-- [Kịch bản demo thử ngày 31 tháng 10](DEMO_31_10.md)
-
-## Chạy local
-
-Yêu cầu Node.js 22.12 trở lên. Tại thư mục gốc:
+Windows PowerShell:
 
 ```powershell
 npm.cmd ci
@@ -45,62 +32,63 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-Chỉ sao chép file cấu hình khi chưa có .env. Mở Local URL do Vite in ra; mặc định http://localhost:5173. Backend được gọi qua /api bằng proxy cùng nguồn. Chưa cần cài PostgreSQL hoặc Docker để chạy local: dữ liệu PostgreSQL nhúng lưu ở .data/postgres, thư xác minh thử nghiệm lưu thành .eml ở .data/mail. Các tệp thư local không được gửi tới inbox thật. Xem DAY_01.md để cấu hình SMTP và server PostgreSQL.
+macOS/Linux:
 
-```powershell
-npm.cmd run typecheck
-npm.cmd test
-npm.cmd run build
+```sh
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-## Tài khoản và dữ liệu mẫu
+Chỉ sao chép .env.example khi chưa có .env. Mở **http://localhost:5173**. API mặc định http://127.0.0.1:3001, trình duyệt dùng đường dẫn /api qua Vite proxy. Đổi API_PORT/WEB_PORT trong .env nếu bận cổng; nếu đổi WEB_PORT thì đổi APP_URL tương ứng.
 
-Sau khi `npm.cmd run dev` đang chạy, mở terminal thứ hai và chạy:
+Ở terminal thứ hai, vẫn trong source/:
 
-```powershell
-npm.cmd run seed:demo
+```sh
+npm run seed:demo
 ```
 
-Script tạo hai tài khoản demo và dữ liệu mẫu (nhãn, ghi chú, đính kèm, ghi chú bảo vệ, chia sẻ), có thể chạy lại mà không nhân đôi dữ liệu:
+Seed tạo dữ liệu mẫu tái lập được, chạy lại không nhân đôi ghi chú. Tài khoản local A: **rumnopro0809@gmail.com / Rum@1234**; local B: **duongphamthai82@gmail.com / Thai@1234**. Đây là thông tin demo local, không phải mật khẩu tài khoản cá nhân online. Mật khẩu ghi chú bảo mật: **Note@1234**. Database local và Render độc lập.
 
-- Tài khoản A: `rumnopro0809@gmail.com` / `Rum@1234`
-- Tài khoản B: `duongphamthai82@gmail.com` / `Thai@1234`
-- Mật khẩu ghi chú "Ghi chú bảo mật": `Note@1234`
+## Email, AI và cấu hình
 
-Chi tiết cách chấm và cấu hình email nằm trong [Readme.txt](Readme.txt).
+- Local mặc định MAIL_TRANSPORT=file: thư thử lưu trong .data/mail, không gửi ra inbox. Có thể mở link xác minh/reset trong file thư. Để gửi email thật, cấu hình MAIL_TRANSPORT=smtp cùng SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM theo .env.example. Không nộp key/mật khẩu SMTP.
+- AI dùng **GEMINI_API_KEY** ở backend; GEMINI_MODEL mặc định gemini-3.1-flash-lite. Local không có key sẽ báo AI chưa cấu hình, các chức năng khác vẫn hoạt động. Online đã có cấu hình và đã kiểm tra Gemini thật. Không đặt key vào biến VITE_ hay mã frontend. Hướng dẫn: AI_SUMMARY.md, AI_QA.md.
+- Production trên Render dùng PostgreSQL server, HTTPS, Mailjet và Gemini. Không nộp DATABASE_URL, cookie phiên hay .env production. Render free có thể khởi động chậm khi ngủ; cần duy trì web/database trong thời gian chấm và kiểm tra hạn database trong dashboard.
 
-## Hồ sơ nộp
+## Cách kiểm tra chức năng chính
 
-- `Readme.txt` là bản hướng dẫn chạy và thông tin chấm bài; còn thiếu MSSV thành viên 2 và URL online.
-- `RUBRIC_SELF_ASSESSMENT.md` là bản nháp tự đánh giá 32 tiêu chí; điểm chính thức vẫn phải điền vào `Rubric.xlsx` theo mẫu của thầy và chỉ tính khi chức năng đã được demo trong video.
-- `DEMO_02_11.md` là kịch bản quay video theo từng mục rubric; `SUBMISSION_CHECKLIST.md` là danh sách đóng gói và kiểm tra trước khi nộp.
-- `demo.mp4`, `Rubric.xlsx` và ảnh GitHub Insights chưa có trong project; xem `SUBMISSION_CHECKLIST.md` để biết các việc còn lại.
+1. Đăng nhập A, xem 6 ghi chú ở lưới/danh sách; tìm kiếm, ghim và nhãn. Tạo/sửa dùng chung editor, chờ **Đã lưu** trước khi rời trang; xóa có xác nhận.
+2. Mở **Kế hoạch tuần này** để xem ảnh và TXT mẫu; thử tải thêm ảnh/video/tệp. Video MP4/WebM có triển khai nhưng chưa xác nhận thử tay và cần trình diễn.
+3. Mở ghi chú bảo mật bằng Note@1234; thử sai mật khẩu, đổi/tắt bảo vệ, khóa lại.
+4. Đăng nhập B ở cửa sổ riêng, vào **Được chia sẻ với tôi** để thử quyền đọc/sửa; A có thể đổi/thu hồi quyền.
+5. Realtime: cả A và B mở **Tài liệu tham khảo** được chia sẻ quyền sửa, chọn **Cộng tác trực tiếp**, gõ đồng thời và chờ **Đã đồng bộ**. Xem REALTIME.md.
+6. AI Summary: mở ghi chú đã lưu ở editor thường, bấm **Tóm tắt bằng AI**; kết quả riêng không ghi đè nội dung.
+7. AI Q&A: chọn **Hỏi AI** ở thanh bên, hỏi “Ai phụ trách quay video?” dựa trên **Ghi chú họp nhóm**. Xem dẫn nguồn [1] và bấm nguồn mở ghi chú gốc. Hỏi đáp dùng truy xuất từ khóa kết hợp Gemini tổng hợp, có kiểm tra quyền/mở khóa và phiên bản nguồn.
+8. Hồ sơ/avatar, đổi mật khẩu, màu ghi chú, cỡ chữ, sáng/tối. Responsive và luồng reset qua email thật đã được người dùng xác nhận ổn ngày 01/11/2026.
 
-## Công nghệ sử dụng
+## Kiểm thử và build
 
-Đã tích hợp và đang chạy:
+```sh
+npm test
+npm run typecheck
+npm run build
+```
 
-- Giao diện: React, TypeScript, Vite, GSAP, `@fontsource` (self-host font).
-- Máy chủ: Node.js, Express, TypeScript.
-- Cơ sở dữ liệu: PostgreSQL; local dùng PGlite nhúng tại `.data/postgres`.
-- Tài khoản: bcrypt, cookie phiên HttpOnly, Nodemailer.
-- Email: Nodemailer; local ghi tệp tại `.data/mail`, SMTP thật chưa cấu hình.
+148/148 test đạt sau khi bắt buộc đăng nhập và gỡ chức năng ngoài đề, TypeScript và build đạt. Sau khi build có thể chạy **npm start** với cấu hình local mặc định để chạy API; lệnh dev ở trên là cách đơn giản để chạy cả giao diện/API. Production phục vụ build/web qua Express khi NODE_ENV=production và đã cấu hình PostgreSQL, HTTPS APP_URL cùng SMTP hoặc mail disabled rõ ràng.
 
-`ws`/Yjs đã ghép cho tiêu đề và nội dung khi bật **Cộng tác trực tiếp** ở cả hai cửa sổ. Hỗ trợ ghép thay đổi đồng thời, tự kết nối lại và xác nhận lưu sau commit; xem [REALTIME.md](REALTIME.md).
+## Phạm vi chưa hoàn chỉnh và hồ sơ còn thiếu
 
-Chưa tích hợp: AI/LLM, service worker/IndexedDB cho offline đầy đủ, Docker Compose và triển khai HTTPS online. Dependency được khóa trong package.json và package-lock.json. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
+- **Mục 31 chưa triển khai**: đã gỡ chế độ khách để tuân thủ yêu cầu bắt buộc đăng nhập; chưa có service worker/cache tài khoản và đồng bộ offline. Không khai điểm guest một phần.
+- Chưa xác nhận thử tay video MP4/WebM; cần thử và quay trước khi khai mục 15 đầy đủ.
+- Chưa có **demo.mp4** hoặc link YouTube: cần cả hai thành viên, tối thiểu 1080p, âm thanh rõ, giới thiệu kiến trúc/công nghệ và trình diễn tuần tự từng mục đã làm. Mục không xuất hiện trong video không được tính.
+- Nếu khai đạt điều kiện GitHub: cần **Screenshot.png** từ Insights thật và source clone còn .git. Nếu không đạt, đề cho phép bỏ bằng chứng và áp dụng trừ 0,5. Chưa chứng minh đủ điều kiện 4 tuần/2 thành viên; tổng tự đánh giá chưa trừ 0,5 nếu thiếu điều kiện này. Source sạch không kèm .git và không khai đủ điều kiện đóng góp.
+- Rubric.xlsx/ZIP cũ là snapshot trước đợt gỡ tính năng. Cần cập nhật điểm mục 31 về chưa triển khai và đóng lại trước khi nộp; không dùng tổng 9,75 trước đó làm điểm cuối. Nếu thầy cấp mẫu, chuyển thông tin vào đúng mẫu.
 
-## Luồng đầu tiên cần hoàn thành
+## Thành phần gói đang chuẩn bị
 
-Đăng ký → tự đăng nhập → hiện trạng thái chưa xác minh email → tạo ghi chú → tự lưu → tải lại vẫn còn → sửa → xác nhận xóa.
+source/ chứa frontend/backend, test, package-lock, schema/migration, script seed và hướng dẫn. Root có README.md, Readme.txt và Rubric.xlsx. Không kèm node_modules, build, .data, .env thật, log hay khóa dịch vụ. Dữ liệu mẫu được tạo bằng script thay vì nộp database chứa dữ liệu cá nhân. Đây là bộ **source + rubric + hướng dẫn**, cần đóng lại sau chỉnh sửa source và bổ sung video trước khi nộp toàn bộ.
 
-Các tình huống lỗi cần kiểm chứng: email trùng, mật khẩu xác nhận không khớp, người chưa đăng nhập, mất kết nối khi lưu và truy cập ghi chú của người khác.
+## Phạm vi vừa điều chỉnh
 
-## Tài liệu chính thức để học theo công việc
-
-- [Vite](https://vite.dev/guide/)
-- [Express](https://expressjs.com/)
-- [PostgreSQL](https://www.postgresql.org/docs/current/tutorial.html)
-- [Yjs và cộng tác](https://docs.yjs.dev/getting-started/a-collaborative-editor)
-- [Mời cộng tác viên GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/repository-access-and-collaboration/inviting-collaborators-to-a-personal-repository)
-- [Kiểm tra ghi nhận đóng góp GitHub](https://docs.github.com/en/account-and-profile/how-tos/contribution-settings/troubleshooting-missing-contributions)
+Chưa đăng nhập phải vào /login. Đã bỏ ghi chú khách và nhắc việc/hằng ngày/hoàn thành; giữ dữ liệu cũ, không tiếp tục cung cấp các chức năng này. Xem BAT_BUOC_DANG_NHAP.md. Bản ZIP/rubric cũ chưa cập nhật thay đổi này.

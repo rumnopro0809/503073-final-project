@@ -25,7 +25,7 @@ export function useEntrance(scope: RefObject<HTMLElement | null>, selector: stri
         clearProps: 'transform,opacity',
       });
       if (panel) {
-        const sections = root.querySelectorAll('.note-editor-heading, .note-editor-fields, .note-organization, .note-reminder, .note-editor-footer');
+        const sections = root.querySelectorAll('.note-editor-heading, .note-editor-fields, .note-organization, .note-editor-footer');
         if (sections.length) timeline.fromTo(sections, { y: 12, opacity: 0.45 }, {
           y: 0, opacity: 1, duration: 0.32, stagger: 0.045, clearProps: 'transform,opacity',
         }, 0.12);

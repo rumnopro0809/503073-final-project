@@ -2,9 +2,6 @@ import type { CSSProperties } from 'react';
 import { Star } from 'lucide-react';
 import type { Label } from '../types/notes';
 
-export function ImportantBadge() {
-  return <span className="important-badge"><Star size={13} fill="currentColor" aria-hidden="true" />Quan trọng</span>;
-}
 export function LabelChip({ label }: { label: Label }) {
   const important = label.name.trim().toLocaleLowerCase('vi') === 'quan trọng';
   return <span className={`label-chip colored-label ${important ? 'label-important' : ''}`}

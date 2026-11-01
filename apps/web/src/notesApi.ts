@@ -4,9 +4,6 @@ import type { Label, Note, NoteDraft } from './types/notes';
 export function createNoteServices(apiCall: typeof api) {
 const api = apiCall;
 const notesApi = {
-  async reminder(note: Note, changes: { dueAt?: string | null; important?: boolean; daily?: boolean; completed?: boolean }) {
-    return (await api<{ note: Note }>(`/notes/${note.id}/reminder`, { ...changes, version: note.version }, { method: 'PATCH' })).note;
-  },
   async read(id: string) { return (await api<{ note: Note }>(`/notes/${id}`)).note; },
   async create(draft: NoteDraft, key: string) {
     return (await api<{ note: Note }>('/notes', draft, { idempotencyKey: key })).note;

@@ -48,9 +48,6 @@ const publicNote = (note: NoteRow, unlocked=true) => ({
 
 // Fetch metadata with the same statement/snapshot as the note's content and version.
 const DONE = `(n.completed_at IS NOT NULL AND (NOT n.daily OR (n.completed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date))`;
-const PRIORITY = `CASE WHEN NOT ${DONE} AND n.due_at < NOW() THEN 0
-  WHEN NOT ${DONE} AND n.due_at <= NOW() + INTERVAL '24 hours' THEN 1
-  WHEN NOT ${DONE} AND n.important THEN 2 ELSE 3 END`;
 const noteSelect = (actorParam:string) => `SELECT n.id, n.title, n.content, n.version, n.pinned, n.pinned_at, n.created_at, n.updated_at,n.password_hash,
   CASE WHEN n.owner_id=${actorParam} THEN 'owner' ELSE (SELECT s.permission FROM note_shares s WHERE s.note_id=n.id AND s.recipient_id=${actorParam}) END AS permission,
   (SELECT u.display_name FROM users u WHERE u.id=n.owner_id) AS owner_name,
@@ -110,11 +107,10 @@ export function notesRouter(db: Database) {
   router.get('/', async (req, res) => {
     const limit = paginationNumber(req.query.limit, 50, 1, 100);
     const offset = paginationNumber(req.query.offset, 0, 0, 1000000);
-    const { q, pinned, labelId, category = 'all', sort = 'updated', shared } = req.query;
+    const { q, pinned, labelId, sort = 'updated', shared } = req.query;
     if (limit === undefined || offset === undefined
-      || Object.keys(req.query).some(key => !['limit', 'offset', 'q', 'pinned', 'labelId', 'sort', 'category', 'shared'].includes(key))
+      || Object.keys(req.query).some(key => !['limit', 'offset', 'q', 'pinned', 'labelId', 'sort', 'shared'].includes(key))
       || (shared!==undefined && shared!=='true')
-      || typeof category !== 'string' || !['all','important','overdue','upcoming','daily','completed'].includes(category)
       || (q !== undefined && (typeof q !== 'string' || q.length > 200))
       || (pinned !== undefined && pinned !== 'true')
       || (labelId !== undefined && (typeof labelId !== 'string' || !UUID.test(labelId)))
@@ -131,12 +127,6 @@ export function notesRouter(db: Database) {
       params.push([...unlocked]);
     }
     if (pinned === 'true') where.push('n.pinned = TRUE');
-    const categories: Record<string,string> = {
-      important: 'n.important = TRUE', overdue: `NOT ${DONE} AND n.due_at < NOW()`,
-      upcoming: `NOT ${DONE} AND n.due_at >= NOW() AND n.due_at <= NOW() + INTERVAL '24 hours'`,
-      daily: 'n.daily = TRUE', completed: DONE,
-    };
-    if (category !== 'all') where.push(`(${categories[category]})`);
     if (labelId !== undefined) {
       params.push(labelId);
       where.push(`EXISTS (SELECT 1 FROM note_labels f WHERE f.note_id = n.id AND f.owner_id = n.owner_id AND f.label_id = $${params.length})`);
@@ -145,9 +135,7 @@ export function notesRouter(db: Database) {
     params.push(limit + 1, offset);
     // Fetch one extra row to determine whether the next page exists.
     const { rows } = await db.query<NoteRow>(
-      `${noteSelect('$1')} WHERE ${where.join(' AND ')} ORDER BY n.pinned DESC, n.pinned_at DESC NULLS LAST, ${PRIORITY},
-       CASE WHEN NOT ${DONE} AND n.due_at <= NOW() + INTERVAL '24 hours' THEN n.due_at END ASC NULLS LAST,
-       ${order}, n.id DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      `${noteSelect('$1')} WHERE ${where.join(' AND ')} ORDER BY n.pinned DESC, n.pinned_at DESC NULLS LAST, ${order}, n.id DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params,
     );
     res.json({ notes: rows.slice(0, limit).map(note=>publicNote(note,unlocked.has(note.id))), pagination: { limit, offset, hasMore: rows.length > limit } });
@@ -170,13 +158,6 @@ export function notesRouter(db: Database) {
       return (await readNote(sql, rows[0].id, res.locals.ownerId))!;
     });
     res.location(`/api/notes/${note.id}`).status(201).json({ note: publicNote(note) });
-  });
-
-  router.get('/reminders', async (req, res) => {
-    const { rows } = await db.query<NoteRow>(`${noteSelect('$1')} WHERE n.owner_id=$1 AND NOT ${DONE}
-      AND n.due_at <= NOW() + INTERVAL '24 hours' ORDER BY n.due_at, n.id LIMIT 100`, [res.locals.ownerId]);
-    const unlocked=await unlockedIds(db,req);
-    res.json({ notes: rows.map(note=>publicNote(note,unlocked.has(note.id))) });
   });
 
   router.param('id', (_req, res, next, id: string) => {
@@ -276,37 +257,6 @@ export function notesRouter(db: Database) {
     const note = await readNote(db, req.params.id, res.locals.ownerId);
     if (!note) { res.status(404).json(NOT_FOUND); return; }
     res.json({ note: publicNote(note) });
-  });
-
-  router.patch('/:id/reminder', async (req, res) => {
-    const input = req.body as Record<string, unknown>;
-    if (!input || typeof input !== 'object' || Array.isArray(input) || !validVersion(input.version)
-      || Object.keys(input).some(key => !['version','dueAt','important','daily','completed'].includes(key))
-      || Object.keys(input).length < 2
-      || ['important','daily','completed'].some(key => key in input && typeof input[key] !== 'boolean')
-      || ('dueAt' in input && input.dueAt !== null && (typeof input.dueAt !== 'string'
-        || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(input.dueAt)
-        || !Number.isFinite(Date.parse(input.dueAt))
-        || new Date(input.dueAt).toISOString().slice(0,19) !== input.dueAt.slice(0,19)))) {
-      res.status(422).json({ message: 'Thời gian nhắc hoặc trạng thái công việc không hợp lệ.' }); return;
-    }
-    const result = await db.transaction(async sql => {
-      const access=await accessibleNote(sql,req.params.id,res.locals.ownerId,'owner',true);
-      if(!access) return {status:404,body:NOT_FOUND};
-      if(!await isUnlocked(sql,req,access)) return {status:423,body:LOCKED};
-      const existing = (await sql.query('SELECT version, due_at, daily FROM notes WHERE id=$1 AND owner_id=$2 FOR UPDATE', [req.params.id, res.locals.ownerId])).rows[0];
-      if (!existing) return { status: 404, body: NOT_FOUND };
-      if (existing.version !== input.version) return { status: 409, body: CONFLICT };
-      const dueAt = 'dueAt' in input ? input.dueAt : existing.due_at;
-      const daily = 'daily' in input ? input.daily : existing.daily;
-      if (daily && dueAt) return { status: 422, body: { message: 'Việc hằng ngày không dùng hạn một lần. Hãy bỏ thời gian trước khi chọn hằng ngày.' } };
-      await sql.query(`UPDATE notes SET due_at=$1, daily=$2, important=COALESCE($3,important),
-        completed_at=CASE WHEN $4::boolean THEN clock_timestamp() WHEN $4::boolean=FALSE THEN NULL ELSE completed_at END,
-        version=version+1, updated_at=clock_timestamp() WHERE id=$5 AND owner_id=$6`,
-        [dueAt, daily, input.important ?? null, input.completed ?? null, req.params.id, res.locals.ownerId]);
-      return { status: 200, body: { note: publicNote((await readNote(sql, req.params.id, res.locals.ownerId))!) } };
-    });
-    res.status(result.status).json(result.body);
   });
 
   router.patch('/:id/organization', async (req, res) => {

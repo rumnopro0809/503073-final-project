@@ -4,7 +4,7 @@ Nguồn: `D:/downloads/503073-FinalProject-V1.docx`, môn 503073 Web Programming
 
 Tài liệu này chuyển yêu cầu của thầy thành checklist triển khai. Phần lộ trình và mô hình dữ liệu là đề xuất ban đầu để cùng thảo luận, không phải yêu cầu bổ sung của đề. Cập nhật ngày 31/10/2026: nhóm có hai người; chủ tài khoản GitHub được người dùng xác nhận là rumnopro0809. Repository 503073-final-project đã được tạo ở chế độ riêng tư. Hạn nộp đã xác nhận lại là **trước 23:59 ngày 02/11/2026, giờ Việt Nam**. Lịch sử commit local hiện chỉ thấy một tác giả, chưa thấy đóng góp của thành viên thứ hai; quy định AI chi tiết của môn vẫn chưa được cung cấp. Xem `STATUS_2026-10-31.md` và `RUBRIC_SELF_ASSESSMENT.md` để biết tình trạng thực tế trước khi đánh dấu checklist.
 
-Cập nhật 01/11/2026: source đã commit/push, 125/125 test và build đạt, 25 mục đã có code + kiểm thử, một số luồng đã thử tay. Checklist bên dưới vẫn để trống vì chỉ tick sau khi chức năng xuất hiện trong video demo; mục 26–28 và 32 chưa triển khai.
+Cập nhật 01/11/2026: 148/148 test và build đạt sau điều chỉnh bắt buộc đăng nhập. Đã gỡ chế độ khách và nhắc việc ngoài phạm vi đề, sửa thứ tự mặc định. Mục 31 hiện chưa triển khai. Realtime/AI/online giữ nguyên; rubric và ZIP cũ cần đóng lại. Xem BAT_BUOC_DANG_NHAP.md.
 
 ## Mục tiêu và phạm vi
 
@@ -14,7 +14,7 @@ Không bổ sung chức năng ngoài đề. Framework và thư viện được p
 
 ## Checklist 32 tiêu chí
 
-Mỗi ô chỉ được đánh dấu hoàn thành khi chạy đúng, có xử lý lỗi và đã chuẩn bị tình huống demo. Đây là checklist làm việc, không thay thế file Rubric.xlsx do thầy cung cấp. Bảng tự đánh giá chi tiết, bằng chứng code và kịch bản demo nằm trong `RUBRIC_SELF_ASSESSMENT.md`; không đánh dấu các mục 26–28, 32 khi chưa triển khai.
+Mỗi ô chỉ được đánh dấu hoàn thành khi chạy đúng, có xử lý lỗi và đã chuẩn bị tình huống demo. Đây là checklist làm việc, không thay thế file Rubric.xlsx do thầy cung cấp. Bảng tự đánh giá chi tiết, bằng chứng code và kịch bản demo nằm trong `RUBRIC_SELF_ASSESSMENT.md`; không đánh dấu mục 31 hoàn chỉnh và chỉ tính các mục đã trình diễn trong video.
 
 | Xong | ID | Tiêu chí | Điểm |
 | --- | --- | --- | --- |

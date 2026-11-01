@@ -86,7 +86,7 @@ test('pins order by pin time, survive content edits, and can be removed', async 
   assert.equal(unpinned.body.note.pinnedAt, null);
 });
 
-test('pin chronology beats urgency, sorting and pagination in every list mode', async () => {
+test('pin chronology precedes unpinned notes in every sort and pagination mode', async () => {
   const old = await createNote(alice,{title:'A old pin',content:'first'});
   const recent = await createNote(alice,{title:'Z new pin',content:'second'});
   const urgent = await createNote(alice,{title:'Urgent unpinned',content:'third'});
@@ -99,6 +99,22 @@ test('pin chronology beats urgency, sorting and pagination in every list mode', 
     const second=await request(app).get('/api/notes').query({sort,limit:1,offset:1}).set('Cookie',alice).expect(200);
     assert.equal(second.body.notes[0].id,old.id);
   }
+});
+
+test('default listing orders unpinned notes by modification time despite retired reminder metadata',async()=>{
+  const old=await createNote(alice,{title:'Older important',content:'Keep legacy data'}),recent=await createNote(alice,{title:'Recent',content:'Newer update'}),pinned=await createNote(alice,{title:'Pinned',content:'Always first'});
+  await db.query("UPDATE notes SET important=TRUE,due_at='2026-01-01',updated_at='2026-10-01' WHERE id=$1",[old.id]);
+  await db.query("UPDATE notes SET updated_at='2026-10-02' WHERE id=$1",[recent.id]);
+  await request(app).patch(`/api/notes/${pinned.id}/organization`).set(headers).set('Cookie',alice).send({version:1,pinned:true}).expect(200);
+  const list=await request(app).get('/api/notes').set('Cookie',alice).expect(200);assert.deepEqual(list.body.notes.map((n:{id:string})=>n.id),[pinned.id,recent.id,old.id]);
+  assert.equal((await db.query('SELECT important FROM notes WHERE id=$1',[old.id])).rows[0].important,true);
+});
+test('retired reminder routes and category filters cannot be used',async()=>{
+  const n=await createNote();
+  await request(app).get('/api/notes/reminders').set('Cookie',alice).expect(404);
+  await request(app).patch(`/api/notes/${n.id}/reminder`).set(headers).set('Cookie',alice).send({version:1,important:true}).expect(404);
+  await request(app).get('/api/notes?category=important').set('Cookie',alice).expect(422);
+  assert.equal((await request(app).get(`/api/notes/${n.id}`).set('Cookie',alice)).body.note.version,1);
 });
 
 test('attachments enforce ownership on upload, list, download and removal, and cascade with notes', async () => {
@@ -225,57 +241,6 @@ test('every notes endpoint requires an authenticated session', async () => {
   assert.equal((await request(app).post('/api/notes').set(headers).send(payload)).status, 401);
   assert.equal((await request(app).patch(`/api/notes/${id}`).set(headers).send({ title: 'Sửa', version: 1 })).status, 401);
   assert.equal((await request(app).delete(`/api/notes/${id}`).set(headers).send({})).status, 401);
-});
-
-test('sidebar categories filter before pagination and remain scoped to the account', async () => {
-  for (let i=0;i<52;i++) await db.query('INSERT INTO notes(id,owner_id,title,content) VALUES($1,$2,$3,$4)',[randomUUID(),aliceId,`Regular ${i}`,'plain']);
-  const a = await createNote(alice,{title:'Important A',content:'needle'});
-  const b = await createNote(alice,{title:'Important B',content:'needle'});
-  for (const note of [a,b]) await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie',alice).send({version:1,important:true}).expect(200);
-  const foreign = await createNote(bob,{title:'Important foreign',content:'needle'});
-  await request(app).patch(`/api/notes/${foreign.id}/reminder`).set(headers).set('Cookie',bob).send({version:1,important:true}).expect(200);
-  const first = await request(app).get('/api/notes').query({category:'important',q:'needle',limit:1}).set('Cookie',alice).expect(200);
-  assert.equal(first.body.notes.length,1); assert.equal(first.body.pagination.hasMore,true);
-  const second = await request(app).get('/api/notes').query({category:'important',q:'needle',limit:1,offset:1}).set('Cookie',alice).expect(200);
-  assert.equal(second.body.pagination.hasMore,false);
-  assert.deepEqual(new Set([first.body.notes[0].id,second.body.notes[0].id]),new Set([a.id,b.id]));
-  await request(app).get('/api/notes').query({category:'invalid'}).set('Cookie',alice).expect(422);
-  await request(app).patch(`/api/notes/${a.id}/reminder`).set(headers).set('Cookie',alice).send({version:2,dueAt:new Date(Date.now()-60000).toISOString()}).expect(200);
-  assert.equal((await request(app).get('/api/notes?category=overdue').set('Cookie',alice)).body.notes[0].id,a.id);
-  await request(app).patch(`/api/notes/${a.id}/reminder`).set(headers).set('Cookie',alice).send({version:3,completed:true}).expect(200);
-  assert.equal((await request(app).get('/api/notes?category=overdue').set('Cookie',alice)).body.notes.length,0);
-  assert.equal((await request(app).get('/api/notes?category=completed').set('Cookie',alice)).body.notes[0].id,a.id);
-});
-
-test('pins stay above urgent reminders, completion persists and ownership is enforced', async () => {
-  const pinned = await createNote(alice, { title: 'Pinned', content: 'later' });
-  await request(app).patch(`/api/notes/${pinned.id}/organization`).set(headers).set('Cookie', alice).send({ version: 1, pinned: true }).expect(200);
-  const urgent = await createNote(alice, { title: 'Urgent', content: 'do it' });
-  const past = new Date(Date.now() - 60000).toISOString();
-  const update = await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, dueAt: past, important: true }).expect(200);
-  assert.equal(update.body.note.dueAt, past); assert.equal(update.body.note.important, true);
-  assert.equal((await request(app).get('/api/notes').set('Cookie', alice)).body.notes[0].id, pinned.id);
-  assert.equal((await request(app).get('/api/notes/reminders').set('Cookie', alice)).body.notes[0].id, urgent.id);
-  assert.deepEqual((await request(app).get('/api/notes/reminders').set('Cookie', bob)).body.notes, []);
-  await request(app).get('/api/notes/reminders').expect(401);
-  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', bob).send({ version: 2, completed: true }).expect(404);
-  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, completed: true }).expect(409);
-  await request(app).patch(`/api/notes/${urgent.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 2, completed: true }).expect(200);
-  assert.deepEqual((await request(app).get('/api/notes/reminders').set('Cookie', alice)).body.notes, []);
-  const done = (await request(app).get(`/api/notes/${urgent.id}`).set('Cookie', alice)).body.note;
-  assert.equal(done.completed, true); assert.ok(done.completedAt); assert.equal(done.content, 'do it');
-});
-
-test('daily completion resets at Vietnam midnight and invalid reminders do not modify content', async () => {
-  const note = await createNote();
-  for (const changes of [{ dueAt: 'tomorrow' }, { dueAt: '2026-10-30T08:00:00' }, { completed: 'yes' }, { daily: true, dueAt: new Date().toISOString() }, { ownerId: bobId }])
-    await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, ...changes }).expect(422);
-  const daily = await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 1, daily: true, dueAt: null, completed: true }).expect(200);
-  assert.equal(daily.body.note.completed, true);
-  await db.query("UPDATE notes SET completed_at = NOW() - INTERVAL '2 days' WHERE id=$1", [note.id]);
-  const reopened = (await request(app).get(`/api/notes/${note.id}`).set('Cookie', alice)).body.note;
-  assert.equal(reopened.daily, true); assert.equal(reopened.completed, false); assert.equal(reopened.content, note.content);
-  await request(app).patch(`/api/notes/${note.id}/reminder`).set(headers).set('Cookie', alice).send({ version: 2, daily: false, completed: false }).expect(200);
 });
 
 test('an unverified account can create and read its own note', async () => {

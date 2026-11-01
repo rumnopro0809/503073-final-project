@@ -17,7 +17,6 @@ import '@fontsource/literata/vietnamese-400-italic.css';
 import '@fontsource/literata/latin-500.css';
 import '@fontsource/literata/vietnamese-500.css';
 import './styles.css';
-import './components/welcome.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode><BrowserRouter><App /></BrowserRouter></React.StrictMode>,
