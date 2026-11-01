@@ -99,6 +99,19 @@ Chưa trừ **0,5 điểm** nếu không đáp ứng điều kiện đóng góp 
 11. Triển khai online: mở https://notes-503073.onrender.com/, đăng ký/đăng nhập và tạo ghi chú trên môi trường Render.
 12. Nêu rõ phần chưa làm: AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ); mục 2 chưa có SMTP thật. Không demo hoặc khai khống các mục này.
 
+## Tạo lại `Rubric.xlsx`
+
+`Rubric.xlsx` trong project được sinh tự động từ `RUBRIC_SELF_ASSESSMENT.csv`:
+
+```powershell
+powershell -NoProfile -File scripts\build-rubric.ps1
+```
+
+- Script cần Microsoft Excel đã cài (dùng COM), đọc `scripts/rubric-config.json` để lấy tiêu đề, họ tên/MSSV và thông tin chấm.
+- Kết quả: sheet `Rubric` gồm 32 dòng, cột điểm tối đa, trạng thái, tự đánh giá, bằng chứng, cách demo, dòng TỔNG dùng công thức `SUM`; sheet `Thông tin chấm` ghi URL, tài khoản, cách chạy và các mục còn thiếu.
+- Sửa điểm trong CSV rồi chạy lại script để cập nhật cả workbook và dòng tổng.
+- **Đây không phải mẫu chính thức của giảng viên.** Nếu thầy cấp `Rubric.xlsx` mẫu, chép giá trị từ CSV vào đúng các cột của mẫu đó thay vì dùng file tự tạo.
+
 ## Việc phải làm trước khi điền Rubric.xlsx
 
 - [x] Commit và push toàn bộ source; kiểm tra GitHub có đủ file mới (01/11, commit `3dc7888`).
