@@ -7,8 +7,9 @@ import { notesRouter } from './notes.js';
 import { labelsRouter } from './labels.js';
 import { attachmentsRouter } from './attachments.js';
 import {summaryRouter,type Summarize} from './summary.js';
+import {questionRouter,type AnswerQuestion} from './questions.js';
 
-export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string; summarize?:Summarize }) {
+export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string; summarize?:Summarize; answerQuestion?:AnswerQuestion }) {
   const app = express();
   app.disable('x-powered-by');
   if (options.trustProxy) app.set('trust proxy', 1);
@@ -35,6 +36,7 @@ export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?
   app.use('/api/notes', summaryRouter(options.db,options.summarize,options.rateLimit!==false));
   app.use('/api/labels', labelsRouter(options.db));
   app.use('/api/attachments', attachmentsRouter(options.db));
+  app.use('/api/ai',questionRouter(options.db,options.answerQuestion,options.rateLimit!==false));
   app.use('/api', (_req, res) => res.status(404).json({ message: 'Không tìm thấy yêu cầu này.' }));
   if (options.webDir) {
     app.use(express.static(options.webDir));

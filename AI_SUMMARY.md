@@ -20,7 +20,7 @@ Local: thêm cùng hai biến vào `.env`, khởi động lại API. Bỏ trốn
 - `npm test`: mock Gemini để kiểm tra prompt/dữ liệu, xử lý lỗi/quota, quyền đọc, mở khóa, nguồn phiên bản, thay đổi/thu hồi quyền trong lúc chờ, giới hạn đồng thời, lưu trước khi tóm tắt và hiển thị văn bản an toàn.
 - Những test này không chứng minh key thật hoặc quota đang hoạt động. Chỉ ghi mục 27 đã chạy online khi bấm nút và nhận phản hồi từ Gemini thật; quay thao tác này trong video.
 - Tối đa 6 yêu cầu/phút/tài khoản, 1 yêu cầu đồng thời/tài khoản và 4 trên mỗi tiến trình. Timeout gọi Gemini 35 giây, trình duyệt chờ tối đa 40 giây. Không có công cụ duyệt web hay truy cập các ghi chú khác trong prompt.
-- Kết quả chỉ hiện trong phiên, không lưu database; chỉnh sửa sẽ bỏ kết quả cũ. AI có thể nhầm, phải kiểm tra lại. Không tóm tắt đính kèm và chưa làm AI Q&A (mục 28).
+- Kết quả chỉ hiện trong phiên, không lưu database; chỉnh sửa sẽ bỏ kết quả cũ. AI có thể nhầm, phải kiểm tra lại. Không tóm tắt đính kèm. Hỏi đáp có dẫn nguồn (mục 28) dùng trang riêng, xem `AI_QA.md`.
 - Tiêu đề/nội dung được gửi tới Google khi người dùng bấm nút. Chính sách free tier về sử dụng dữ liệu khác paid tier; xem tài liệu giá trước khi dùng dữ liệu nhạy cảm.
 
 Tài liệu chính thức: https://ai.google.dev/api/generate-content ; https://ai.google.dev/gemini-api/docs/models ; https://ai.google.dev/gemini-api/docs/pricing .

@@ -19,6 +19,7 @@ import { NoteSecurity, type ProtectionChange } from './NoteSecurity';
 import { NoteShares } from './NoteShares';
 import { CollaborativeEditor } from './CollaborativeEditor';
 import {NoteSummary} from './NoteSummary';
+import {NoteQuestions} from './NoteQuestions';
 
 interface Props {
   guest?: boolean;
@@ -82,7 +83,7 @@ function readPreferences(key: string) {
   } catch { return normalizePreferences(); }
 }
 export function NotesWorkspace({ onSessionExpired, onDirtyChange, authenticationRevision = 0, beforeLeaveRef, guest = false, onLogout, onAccount, preferenceKey = 'ghichu.display.guest' }: Props) {
-  const [panel, setPanel] = useState<'notes' | 'settings' | 'about'>('notes');
+  const [panel, setPanel] = useState<'notes' | 'settings' | 'about' | 'qa'>('notes');
   const [preferences, setPreferences] = useState(() => readPreferences(preferenceKey));
   const [preferenceError, setPreferenceError] = useState('');
   const [preferenceBusy, setPreferenceBusy] = useState(false);
@@ -334,6 +335,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     if (navigating.current) return false;
     navigating.current = true; setNavigationBusy(true); setEditorError(''); setActionMessage(''); cancelOpening();
     try {
+      if(liveFlushRef.current&&!await liveFlushRef.current()){
+        setEditorError('Hãy chờ cộng tác đồng bộ xong trước khi tiếp tục.');return false;
+      }
       if (!await autosave.flush()) {
         setEditorError('Hãy hoàn tất việc lưu ghi chú trước khi thay đổi ghim hoặc nhãn. Bản nháp của bạn vẫn được giữ.');
         return false;
@@ -452,8 +456,8 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       setEditorError(messageOf(failure));
     } finally { navigating.current = false; setNavigationBusy(false); }
   }
-  async function openNote(note: Note) {
-    if (editor?.note?.id === note.id && !openingId) return;
+  async function openNote(note: Pick<Note,'id'>,refresh=false) {
+    if (editor?.note?.id === note.id && !openingId && !refresh) return;
     if (!await prepareToLeave()) return;
     setLiveNote(null);
     cancelOpening();
@@ -492,6 +496,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         <button ref={labelManagerButton} type="button" className="sidebar-item" aria-expanded={showLabels} disabled={navigationBusy}
           onClick={() => { setPanel('notes'); setShowLabels(value => !value); }}><Tag size={18} />Quản lý nhãn</button></div>
       <nav className="sidebar-system" aria-label="Ứng dụng">
+        {!guest&&<button type="button" className="sidebar-item" aria-current={panel==='qa'?'page':undefined} onClick={()=>setPanel('qa')}><StickyNote size={18}/>Hỏi AI</button>}
         <button type="button" className="sidebar-item" aria-current={panel === 'settings' ? 'page' : undefined} onClick={() => setPanel('settings')}><Settings size={18} />Cài đặt</button>
         <button type="button" className="sidebar-item" aria-current={panel === 'about' ? 'page' : undefined} onClick={() => setPanel('about')}><Info size={18} />Về ứng dụng</button>
         {onLogout && <button type="button" className="sidebar-item sidebar-logout" onClick={onLogout}><LogOut size={18} />Đăng xuất</button>}
@@ -595,6 +600,11 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       <button type="button" className="quiet-button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? 'Đang tải thêm…' : moreError ? 'Thử tải thêm' : 'Tải thêm ghi chú'}</button>
     </div>}
     </div>
+    {panel==='qa'&&!guest&&<NoteQuestions busy={navigationBusy} onAction={async work=>{
+      let failure:unknown;
+      const completed=await organizedAction(async()=>{try{await work();}catch(error){failure=error;throw error;}});
+      if(failure)throw failure;return completed;
+    }} onOpenSource={id=>{setPanel('notes');void openNote({id},true);}}/>}
     {panel === 'settings' && <section className="workspace-panel" aria-label="Cài đặt hiển thị"><h2>Cài đặt</h2><p>{guest ? 'Tùy chọn được nhớ trên trình duyệt này.' : 'Tùy chọn được đồng bộ theo tài khoản khi có kết nối.'} Kiểu xem áp dụng cho phiên hiện tại; lần mở mới mặc định là lưới.</p>
       <fieldset disabled={preferenceBusy} className="preferences-fields"><legend className="sr-only">Tùy chọn hiển thị</legend>
       <label>Mật độ thẻ<select value={preferences.density} onChange={event => updatePreferences({ ...preferences, density: event.target.value })}><option value="comfortable">Thoáng, dễ đọc</option><option value="compact">Gọn, xem nhiều ghi chú</option></select></label>

@@ -1531,6 +1531,15 @@ form .primary-button {
 .note-ai-summary p { font-size:13px; line-height:1.75; }
 .note-ai-summary > p { color:var(--muted); }
 .ai-summary-result { margin-top:14px; padding:16px; border:1px solid var(--border); border-radius:10px; overflow-wrap:anywhere; }
+.note-questions form { display:grid; gap:12px; margin:24px 0; }
+.note-questions textarea { width:100%; min-width:0; resize:vertical; font:inherit; padding:12px; border:1px solid var(--border); border-radius:10px; }
+.note-questions form button { justify-self:start; }
+.note-questions ul { list-style:none; padding:0; display:grid; gap:14px; }
+.note-questions li { padding:14px; border:1px solid var(--border); border-radius:10px; display:grid; gap:8px; min-width:0; overflow-wrap:anywhere; }
+.note-questions li button { white-space:normal; text-align:left; }
+.note-questions small { color:var(--muted); }
+.note-questions details p { white-space:pre-wrap; }
+@media(max-width:720px) { .note-questions textarea { font-size:16px; } }
 .note-attachments h3 { margin-top:0; font-size:15px; }
 .note-attachments p { font-size:12px; line-height:1.7; color:var(--muted); }
 .note-attachments label { display:grid; gap:8px; font-size:13px; }

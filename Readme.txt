@@ -182,6 +182,11 @@ Nâng cao:
   không thay nội dung gốc. GEMINI_API_KEY chỉ cấu hình ở backend.
   Đã kiểm tra phản hồi AI thật trên Render ngày 01/11/2026.
   Hướng dẫn cấu hình và giới hạn: source/AI_SUMMARY.md.
+- AI Q&A (mục 28): chọn "Hỏi AI" ở thanh bên, đặt câu hỏi có từ khóa
+  cụ thể trong ghi chú. Câu trả lời có số nguồn, đoạn trích và nút mở
+  ghi chú gốc; nếu thiếu dữ liệu sẽ báo chưa đủ thông tin. Dùng chung
+  cấu hình Gemini. Chỉ dùng ghi chú được đọc và đã mở khóa trong phiên.
+  Hướng dẫn và giới hạn tìm theo từ khóa: source/AI_QA.md.
 
 Giao diện:
 - Responsive cho điện thoại, máy tính bảng và desktop.
@@ -196,7 +201,6 @@ Giao diện:
 
 Các mục sau chưa có hoặc mới một phần, không tính là đã hoàn thành:
 
-- AI Q&A có dẫn nguồn (mục 28).
 - Offline đầy đủ (mục 31): chưa có service worker, cache ghi chú tài
   khoản và đồng bộ khi có mạng lại. Chế độ khách dùng localStorage chỉ
   là một phần.

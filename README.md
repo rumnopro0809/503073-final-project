@@ -5,7 +5,7 @@
 ## Trạng thái
 
 Cập nhật ngày 01/11/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
-Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **145 bài test đạt**, TypeScript và build đạt. Lighthouse trước khi thêm realtime ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
+Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **156 bài test đạt**, TypeScript và build đạt. Lighthouse trước khi thêm realtime ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
 
 Đã kiểm chứng thủ công trên trình duyệt: đăng ký, xác minh email, quên/đặt lại mật khẩu, đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, tải PNG/TXT, sáng/tối và ghi chú khách sau khi tải lại.
 
@@ -13,7 +13,9 @@ Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint 
 
 AI Summary đã có API và nút **Tóm tắt bằng AI** cho ghi chú đã lưu. Backend gọi Google Gemini, kiểm tra quyền/mở khóa và phiên bản; kết quả riêng không ghi đè nội dung. Cần cấu hình `GEMINI_API_KEY` ở server để chạy thật; xem [AI_SUMMARY.md](AI_SUMMARY.md). Test tự động dùng provider giả lập. Ngày 01/11 đã kiểm tra Gemini thật trên Render bằng `scripts/check-summary-online.mjs`, nhận tóm tắt và xác nhận ghi chú gốc không đổi.
 
-Chưa hoàn thành: AI Q&A và offline đầy đủ (service worker/cache tài khoản/đồng bộ). Hạn nộp là **trước 23:59 ngày 02/11/2026**. Các chức năng đã làm vẫn cần xuất hiện trong video demo.
+AI Q&A đã có trang **Hỏi AI** ở thanh bên: truy xuất ghi chú theo từ khóa, câu trả lời có số nguồn và nút mở ghi chú gốc. Dùng cùng cấu hình Gemini, chỉ dùng ghi chú được phép đọc và đã mở khóa; không đủ bằng chứng thì báo thiếu thông tin. Xem [AI_QA.md](AI_QA.md) để biết giới hạn và cách demo.
+
+Chưa hoàn thành: offline đầy đủ (service worker/cache tài khoản/đồng bộ). Hạn nộp là **trước 23:59 ngày 02/11/2026**. Các chức năng đã làm vẫn cần xuất hiện trong video demo.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 

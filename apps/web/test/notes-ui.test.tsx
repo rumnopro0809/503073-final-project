@@ -120,6 +120,35 @@ test('AI Summary reports missing configuration and can retry without changing no
   assert.equal(contentInput().value,noteA.content);assert.equal(calls.filter(call=>call.method==='PATCH').length,0);
 });
 
+test('AI Q&A saves a pending draft, renders cited sources safely and opens the original note',async()=>{
+  let saved={...noteA};const operations:string[]=[];
+  respond=(url,init)=>{
+    if(url==='/api/ai/ask'){
+      operations.push('ask');assert.deepEqual(JSON.parse(String(init?.body)),{question:'Ai quay video?'});
+      return json({answer:'Thái quay video [1]. <script>unsafe()</script>',insufficient:false,sources:[{id:noteA.id,title:noteA.title,excerpt:'Thái quay video.',version:saved.version,label:1}]});
+    }
+    if(url.includes('?'))return json(page([saved]));
+    if(init?.method==='PATCH'){operations.push('save');saved={...saved,...JSON.parse(String(init.body)),version:saved.version+1};}
+    return json({note:saved});
+  };
+  mount();const actor=user();await actor.click(await screen.findByRole('button',{name:'Mở ghi chú Ghi chú A'}));await actor.type(contentInput(),' cập nhật');
+  await actor.click(screen.getByRole('button',{name:'Hỏi AI'}));
+  const panel=within(screen.getByRole('region',{name:'Hỏi AI về ghi chú'}));
+  await actor.type(panel.getByLabelText('Câu hỏi về ghi chú'),'Ai quay video?');await actor.click(panel.getByRole('button',{name:'Hỏi AI'}));
+  assert.ok(await panel.findByText(/Thái quay video \[1\]/));assert.ok(operations.indexOf('save')<operations.indexOf('ask'));assert.equal(document.querySelector('.ai-answer script'),null);
+  await actor.click(panel.getByRole('button',{name:'[1] Ghi chú A'}));await waitFor(()=>assert.equal(titleInput().value,noteA.title));
+  assert.ok(calls.filter(call=>call.url==='/api/notes/a').length>=2);
+});
+
+test('AI Q&A shows insufficient evidence and provider errors, and is unavailable in guest mode',async()=>{
+  let attempt=0;respond=url=>url==='/api/ai/ask'?(++attempt===1?json({answer:'Chưa đủ thông tin trong ghi chú.',insufficient:true,sources:[]}):json({message:'AI hết hạn mức, thử lại sau.'},429)):url.includes('?')?json(page([])):json({note:noteA});
+  mount();const actor=user();await actor.click(screen.getByRole('button',{name:'Hỏi AI'}));let panel=within(screen.getByRole('region',{name:'Hỏi AI về ghi chú'}));
+  await actor.type(panel.getByLabelText('Câu hỏi về ghi chú'),'Thiên thạch ở đâu?');await actor.click(panel.getByRole('button',{name:'Hỏi AI'}));
+  assert.ok(await panel.findByText('Chưa đủ thông tin trong ghi chú.'));assert.equal(panel.queryByRole('region',{name:'Nguồn ghi chú'}),null);
+  await actor.click(panel.getByRole('button',{name:'Hỏi AI'}));assert.ok(await panel.findByText('AI hết hạn mức, thử lại sau.'));
+  cleanup();await act(async()=>{render(<NotesWorkspace guest onSessionExpired={onExpired} onDirtyChange={onDirty}/>);});assert.equal(screen.queryByRole('button',{name:'Hỏi AI'}),null);
+});
+
 test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
   mount();
   const actor = user();
