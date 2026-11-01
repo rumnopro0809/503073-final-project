@@ -11,7 +11,7 @@ Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint 
 
 Đã ghép cộng tác trực tiếp bằng WebSocket/Yjs, lưu snapshot trong PostgreSQL và kiểm tra quyền từng cập nhật. Cách dùng và giới hạn: [REALTIME.md](REALTIME.md). Bản online: https://notes-503073.onrender.com/; SMTP Mailjet đã được người dùng xác nhận nhận thư. Local dùng PGlite và thư lưu ở `.data/mail` khi cấu hình file transport.
 
-AI Summary đã có API và nút **Tóm tắt bằng AI** cho ghi chú đã lưu. Backend gọi Google Gemini, kiểm tra quyền/mở khóa và phiên bản; kết quả riêng không ghi đè nội dung. Cần cấu hình `GEMINI_API_KEY` ở server để chạy thật; xem [AI_SUMMARY.md](AI_SUMMARY.md). Test dùng provider giả lập; kiểm thử thật dùng script `scripts/check-summary-online.mjs` sau deploy.
+AI Summary đã có API và nút **Tóm tắt bằng AI** cho ghi chú đã lưu. Backend gọi Google Gemini, kiểm tra quyền/mở khóa và phiên bản; kết quả riêng không ghi đè nội dung. Cần cấu hình `GEMINI_API_KEY` ở server để chạy thật; xem [AI_SUMMARY.md](AI_SUMMARY.md). Test tự động dùng provider giả lập. Ngày 01/11 đã kiểm tra Gemini thật trên Render bằng `scripts/check-summary-online.mjs`, nhận tóm tắt và xác nhận ghi chú gốc không đổi.
 
 Chưa hoàn thành: AI Q&A và offline đầy đủ (service worker/cache tài khoản/đồng bộ). Hạn nộp là **trước 23:59 ngày 02/11/2026**. Các chức năng đã làm vẫn cần xuất hiện trong video demo.
 

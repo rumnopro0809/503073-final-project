@@ -177,6 +177,11 @@ Nâng cao:
   thay đổi tức thời. Chờ "Đã đồng bộ" rồi đóng và mở lại kiểm tra lưu.
   Người chỉ đọc xem trực tiếp nhưng không sửa. Mất mạng tạm thời sẽ
   thử kết nối lại khi giữ trang mở. Hướng dẫn đầy đủ: source/REALTIME.md.
+- AI Summary (mục 27): mở ghi chú đã lưu, bấm "Tóm tắt bằng AI".
+  Tiêu đề/nội dung gửi đến Google Gemini; bản tóm tắt hiển thị riêng,
+  không thay nội dung gốc. GEMINI_API_KEY chỉ cấu hình ở backend.
+  Đã kiểm tra phản hồi AI thật trên Render ngày 01/11/2026.
+  Hướng dẫn cấu hình và giới hạn: source/AI_SUMMARY.md.
 
 Giao diện:
 - Responsive cho điện thoại, máy tính bảng và desktop.
@@ -191,13 +196,14 @@ Giao diện:
 
 Các mục sau chưa có hoặc mới một phần, không tính là đã hoàn thành:
 
-- AI Summary (mục 27) và AI Q&A có dẫn nguồn (mục 28).
+- AI Q&A có dẫn nguồn (mục 28).
 - Offline đầy đủ (mục 31): chưa có service worker, cache ghi chú tài
   khoản và đồng bộ khi có mạng lại. Chế độ khách dùng localStorage chỉ
   là một phần.
 - Đã triển khai online tại https://notes-503073.onrender.com/.
   Đã thử HTTPS, đăng ký/phiên, tạo/sửa/đọc ghi chú và tệp trên database Render.
-  Cần quay video mục 32; email thật và dữ liệu mẫu online còn chưa có.
+  Cần quay video mục 32 và chuẩn bị dữ liệu mẫu online cho giảng viên.
+  Email thật dùng Mailjet, người dùng đã xác nhận nhận được thư.
 - SMTP thật và PostgreSQL server riêng chưa được kiểm chứng trong bộ
   test tự động; local dùng file mail và PGlite.
 - Chưa chụp thủ công đủ ba cỡ màn hình 375px, 768px, 1440px và chưa

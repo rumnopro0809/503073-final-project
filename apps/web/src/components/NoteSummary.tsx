@@ -14,7 +14,7 @@ export function NoteSummary({noteId,version,dirty,busy,onAction}:{noteId:string;
     try{
       await onAction(async()=>{
         try{
-          const next=await api<Result>(`/notes/${noteId}/summary`,{}, {signal:request.signal});
+          const next=await api<Result>(`/notes/${noteId}/summary`,{}, {signal:request.signal,timeoutMs:40000});
           if(!request.signal.aborted)setResult(next);
         }catch(failure){if(!request.signal.aborted)setError(failure instanceof Error?failure.message:'Chưa tạo được tóm tắt.');}
       });

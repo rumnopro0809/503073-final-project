@@ -1,5 +1,7 @@
 # AI Summary — mục 27
 
+Ngày 01/11/2026: 145/145 test đạt, TypeScript và production build đạt. Đã gọi Gemini thật trên Render bằng ghi chú thử: nhận tóm tắt đúng tên Triều/Thái, hạn 02/11 trước 23:59 và video 1080p; xác nhận ghi chú gốc và version không đổi. Ghi chú thử đã xóa và tài khoản thử đã đăng xuất. Có một lần lỗi kết nối/timeout trước khi lần kiểm tra lại thành công; thời gian chờ được tăng lên 35 giây ở server và 40 giây ở trình duyệt.
+
 Mở ghi chú tài khoản đã lưu → **Tóm tắt bằng AI**. Ứng dụng lưu bản nháp trước, gửi tiêu đề/nội dung từ database đến Gemini, hiển thị kết quả riêng, không ghi đè ghi chú. Có thể dùng với ghi chú được chia sẻ chỉ đọc; ghi chú bảo vệ cần mở khóa. Trong chế độ cộng tác, đóng cộng tác rồi mở ghi chú để dùng tóm tắt.
 
 ## Cấu hình Render
@@ -17,7 +19,7 @@ Local: thêm cùng hai biến vào `.env`, khởi động lại API. Bỏ trốn
 
 - `npm test`: mock Gemini để kiểm tra prompt/dữ liệu, xử lý lỗi/quota, quyền đọc, mở khóa, nguồn phiên bản, thay đổi/thu hồi quyền trong lúc chờ, giới hạn đồng thời, lưu trước khi tóm tắt và hiển thị văn bản an toàn.
 - Những test này không chứng minh key thật hoặc quota đang hoạt động. Chỉ ghi mục 27 đã chạy online khi bấm nút và nhận phản hồi từ Gemini thật; quay thao tác này trong video.
-- Tối đa 6 yêu cầu/phút/tài khoản, 1 yêu cầu đồng thời/tài khoản và 4 trên mỗi tiến trình. Timeout gọi Gemini 12 giây. Không có công cụ duyệt web hay truy cập các ghi chú khác trong prompt.
+- Tối đa 6 yêu cầu/phút/tài khoản, 1 yêu cầu đồng thời/tài khoản và 4 trên mỗi tiến trình. Timeout gọi Gemini 35 giây, trình duyệt chờ tối đa 40 giây. Không có công cụ duyệt web hay truy cập các ghi chú khác trong prompt.
 - Kết quả chỉ hiện trong phiên, không lưu database; chỉnh sửa sẽ bỏ kết quả cũ. AI có thể nhầm, phải kiểm tra lại. Không tóm tắt đính kèm và chưa làm AI Q&A (mục 28).
 - Tiêu đề/nội dung được gửi tới Google khi người dùng bấm nút. Chính sách free tier về sử dụng dữ liệu khác paid tier; xem tài liệu giá trước khi dùng dữ liệu nhạy cảm.
 
