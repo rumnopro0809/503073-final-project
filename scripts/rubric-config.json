@@ -1,0 +1,24 @@
+{
+  "title": "BẢNG TỰ ĐÁNH GIÁ 32 TIÊU CHÍ - PROJECT QUẢN LÝ GHI CHÚ",
+  "subtitle": "Môn 503073 - Web Programming & Applications - Học kỳ I, năm học 2026-2027",
+  "member1": "Nguyễn Hải Triều - 524H0072",
+  "member2": "Dương Phạm Thái - 524H0189",
+  "updated": "Ngày cập nhật: 01/11/2026",
+  "headers": ["ID", "Tiêu chí", "Điểm tối đa", "Trạng thái", "Tự đánh giá", "Bằng chứng chính", "Cách demo"],
+  "total": "TỔNG",
+  "totalLabel": "Tổng tự đánh giá",
+  "note": "Bảng này tổng hợp từ RUBRIC_SELF_ASSESSMENT.csv. Nếu giảng viên cấp file Rubric.xlsx mẫu, chép các giá trị tương ứng vào file mẫu đó. Điểm chỉ được tính khi chức năng đã demo trong video.",
+  "infoSheet": "Thông tin chấm",
+  "info": [
+    ["Repository GitHub", "https://github.com/rumnopro0809/503073-final-project (private, cần cấp quyền đọc)"],
+    ["URL online", "https://notes-503073.onrender.com/ (chưa có tài khoản chấm online; tài khoản bên dưới dùng local)"],
+    ["Cách chạy", "npm.cmd ci -> Copy-Item .env.example .env -> npm.cmd run dev -> http://localhost:5173"],
+    ["Dữ liệu mẫu", "npm.cmd run seed:demo (terminal thứ hai khi app đang chạy)"],
+    ["Tài khoản A", "rumnopro0809@gmail.com / Rum@1234"],
+    ["Tài khoản B", "duongphamthai82@gmail.com / Thai@1234"],
+    ["Mật khẩu ghi chú bảo vệ", "Note@1234"],
+    ["Kiểm thử", "136/136 bài test đạt (gồm 10 test realtime); build exit 0; Lighthouse Accessibility 100, Best Practices 100, SEO 100"],
+    ["Chưa hoàn thành", "27 AI Summary, 28 AI Q&A, 31 offline đầy đủ (chưa có service worker/cache tài khoản/đồng bộ); mục 2 chưa có SMTP thật; mục 30 chưa chụp đủ 3 cỡ màn hình. Realtime (26) và online (32) đã có, chờ quay video."],
+    ["Điều kiện GitHub", "Lịch sử hiện chỉ có một tác giả và chưa đủ 4 tuần; nhóm ghi nhận có thể bị trừ 0,5 điểm, không tạo commit giả"]
+  ]
+}

@@ -2,11 +2,11 @@
 
 Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, không thay thế `Rubric.xlsx` theo mẫu của thầy. Chỉ tính một mục là hoàn thành khi chức năng chạy đúng, xử lý lỗi và **đã được demo trong video**.
 
-Điểm tối đa: **10,00**. Tự đánh giá thận trọng hiện tại: **8,05** (chưa trừ 0,5 điểm điều kiện đóng góp GitHub).
+Điểm tối đa: **10,00**. Tự đánh giá thận trọng hiện tại: **9,05** (chưa trừ 0,5 điểm điều kiện đóng góp GitHub).
 
-- 25 mục đã có code + kiểm thử tự động; 24 mục đã thử tay hoặc đã có kịch bản demo.
-- 3 mục một phần: 2, 30, 31.
-- 4 mục chưa có: 26, 27, 28, 32.
+- 26 mục đã có code + kiểm thử tự động; 24 mục đã thử tay hoặc đã có kịch bản demo.
+- 3 mục một phần: 2 (chưa có SMTP thật), 30 (chưa chụp đủ 3 cỡ màn hình), 31 (mới có ghi chú khách).
+- 2 mục chưa có: 27, 28 (AI Summary và AI Q&A).
 
 ## Bảng tự đánh giá
 
@@ -37,13 +37,13 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 | 23 | Bật/tắt mật khẩu từng ghi chú | 0,50 | Đạt, cần demo | 0,50 | `POST /notes/:id/protection`, `NoteSecurity.tsx`, test bảo vệ | Bật mật khẩu, khóa, mở khóa; tắt bảo vệ cần mật khẩu hiện tại. |
 | 24 | Kiểm tra và đổi mật khẩu ghi chú | 0,50 | Đạt, cần demo | 0,50 | `POST /notes/:id/unlock`, đổi protection, test phiên 15 phút | Nhập sai/đúng mật khẩu; đổi mật khẩu; khóa lại. |
 | 25 | Chia sẻ và nhận ghi chú | 0,50 | Đạt, đã thử A→B | 0,50 | `POST/GET/DELETE /notes/:id/shares`, `NoteShares.tsx`, shared list; test quyền | A chia sẻ cho B quyền đọc/sửa; B xem trong “Được chia sẻ với tôi”; thu hồi. Đã thử ngày 01/11: B thấy 2 ghi chú, thông báo mới, đúng quyền chỉ đọc/được sửa. |
-| 26 | Cộng tác và cập nhật thời gian thực | 0,50 | Chưa có | 0,00 | Không có WebSocket/Yjs; chỉ phát hiện xung đột version | Không demo được. Không khai đã làm. |
+| 26 | Cộng tác và cập nhật thời gian thực | 0,50 | Đạt, đã có test | 0,50 | `apps/api/src/realtime.ts` (WebSocket + Yjs, kiểm tra origin/phiên/quyền/mở khóa), `apps/web/src/liveSession.ts`, `CollaborativeEditor.tsx`; `realtime.test.ts` + `live-session.test.ts` 10/10 đạt: nhiều người sửa cùng lúc, khôi phục trạng thái, chỉ đọc, thu hồi quyền, chỉnh sửa HTTP cũ không ghi đè | Hai cửa sổ A và B mở cùng ghi chú được chia sẻ quyền sửa; gõ ở A thấy ngay ở B; B chỉ đọc không gõ được; thu hồi quyền thì B không gửi được nữa. |
 | 27 | AI Summary | 0,25 | Chưa có | 0,00 | Chưa có tích hợp LLM/API/giao diện | Không demo được. |
 | 28 | AI Question & Answer | 0,25 | Chưa có | 0,00 | Chưa có truy xuất ghi chú, LLM và dẫn nguồn | Không demo được. |
 | 29 | UI/UX | 0,50 | Đạt, đã kiểm chứng | 0,50 | Trạng thái tải/rỗng/lỗi, GSAP, reduced motion, focus; Lighthouse ngày 01/11: Accessibility 100, Best Practices 100, SEO 100 | Demo bàn phím, thông báo lỗi, dark mode, reduced motion; đã sửa tương phản chữ và tên truy cập nút hồ sơ. |
 | 30 | Responsive | 0,50 | Một phần, cần xác minh 3 cỡ | 0,40 | Media query 1500/1000/960/720px, sidebar mobile, editor; đã xem giao diện desktop thật | Chụp/demo 375px, 768px, 1440px; kiểm tra bàn phím. Công cụ browser trong app không đổi được viewport nên phải resize tay khi quay. |
 | 31 | Khả năng offline | 0,50 | Một phần | 0,25 | Guest `localStorage` trong `localNotes.ts`; đã thử tạo ghi chú khách, tải lại vẫn còn, không gọi API ghi chú; chưa có service worker/cache tài khoản/đồng bộ | Demo ghi chú khách khi offline và tải lại. Nói rõ giới hạn tài khoản. |
-| 32 | Triển khai online | 0,50 | Chưa có | 0,00 | Không có URL, Docker Compose hoặc cấu hình deploy | Không demo được. Dùng Readme.txt hướng dẫn chạy local. |
+| 32 | Triển khai online | 0,50 | Đạt, URL đã kiểm tra | 0,50 | https://notes-503073.onrender.com/ trả trang ứng dụng ngày 01/11; `DEPLOY_RENDER.md`; `Readme.txt` ghi URL và lưu ý database online chưa có dữ liệu mẫu | Mở URL công khai, đăng ký/đăng nhập, tạo ghi chú, tải lại; nói rõ chưa cấu hình SMTP thật và chưa seed dữ liệu mẫu trên online. |
 
 ## Kiểm chứng ngày 01/11/2026
 
@@ -62,7 +62,9 @@ Cập nhật ngày 01/11/2026. Đây là **bản nháp tự đánh giá**, khôn
 | Đính kèm | Hiện 2 tệp mẫu, có xem trước ảnh và nút xoá. |
 | Sáng/tối | Đổi sang Tối, tải lại vẫn giữ; đã trả về Sáng + Lưới cho dữ liệu chấm. |
 | Ghi chú khách | Tạo ghi chú, tải lại vẫn còn; chỉ gọi `/api/auth/me`, không gọi API ghi chú. |
-| Lighthouse | Accessibility **100**, Best Practices **100**, SEO **100** sau khi sửa tương phản và `aria-label`. |
+| Lighthouse | Accessibility **100**, Best Practices 100, SEO 100 sau khi sửa tương phản và `aria-label`. |
+| Realtime | `npm.cmd test` 136/136 đạt, trong đó 10 test realtime: hai người sửa cùng lúc, hợp nhất bản nháp khi mất kết nối, chỉ đọc không ghi được, thu hồi quyền chặn ghi, chỉnh sửa HTTP cũ không ghi đè bản realtime. |
+| Online | `https://notes-503073.onrender.com/` trả trang “Ghi chú — Không gian cho ý tưởng” ngày 01/11. Chưa seed dữ liệu mẫu và chưa có SMTP thật trên môi trường này. |
 
 Chưa kiểm tra bằng công cụ: ba cỡ màn hình 375/768/1440 (cửa sổ browser trong app không cho đổi viewport) và tải video MP4/WebM (mới thử PNG và TXT).
 
@@ -73,12 +75,12 @@ Chưa kiểm tra bằng công cụ: ba cỡ màn hình 375/768/1440 (cửa sổ 
 | Tài khoản (1–8) | 2,00 | 1,90 |
 | Ghi chú cơ bản (9–22) | 3,50 | 3,50 |
 | Ghi chú nâng cao (23–25) | 1,50 | 1,50 |
-| Cộng tác (26) | 0,50 | 0,00 |
+| Cộng tác (26) | 0,50 | 0,50 |
 | AI (27–28) | 0,50 | 0,00 |
 | UI/UX và responsive (29–30) | 1,00 | 0,90 |
 | Offline (31) | 0,50 | 0,25 |
-| Triển khai online (32) | 0,50 | 0,00 |
-| **Tổng** | **10,00** | **8,05** |
+| Triển khai online (32) | 0,50 | 0,50 |
+| **Tổng** | **10,00** | **9,05** |
 
 Chưa trừ **0,5 điểm** nếu không đáp ứng điều kiện đóng góp GitHub. Điểm thực tế phụ thuộc việc demo trong video và đánh giá của giảng viên.
 
@@ -92,19 +94,22 @@ Chưa trừ **0,5 điểm** nếu không đáp ứng điều kiện đóng góp 
 6. Đính kèm ảnh/video/tệp.
 7. Bảo vệ ghi chú: bật mật khẩu, khóa, mở khóa, đổi mật khẩu, tắt bảo vệ.
 8. Chia sẻ: tài khoản A chia sẻ cho B quyền đọc/sửa; B xem khu vực được chia sẻ; thu hồi.
-9. Responsive: 375px, 768px, 1440px; kiểm tra bàn phím và reduced motion.
-10. Nêu rõ phần chưa làm: realtime, AI, offline đầy đủ, triển khai online. Không demo hoặc khai khống các mục này.
+9. Realtime: hai profile A và B mở cùng một ghi chú được chia sẻ quyền sửa; gõ ở A thấy nội dung sang B; B ở quyền chỉ đọc không gõ được; thu hồi quyền thì B ngừng nhận/gửi.
+10. Responsive: 375px, 768px, 1440px; kiểm tra bàn phím và reduced motion.
+11. Triển khai online: mở https://notes-503073.onrender.com/, đăng ký/đăng nhập và tạo ghi chú trên môi trường Render.
+12. Nêu rõ phần chưa làm: AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ); mục 2 chưa có SMTP thật. Không demo hoặc khai khống các mục này.
 
 ## Việc phải làm trước khi điền Rubric.xlsx
 
 - [x] Commit và push toàn bộ source; kiểm tra GitHub có đủ file mới (01/11, commit `3dc7888`).
-- [x] Chạy lại `npm.cmd test` và `npm.cmd run build` (125/125, build exit 0).
-- [x] Điền họ tên, MSSV (còn MSSV thành viên 2) và tài khoản chấm vào `Readme.txt`.
+- [x] Chạy lại `npm.cmd test` và `npm.cmd run build` (136/136 test đạt, build exit 0).
+- [x] Điền họ tên, MSSV hai thành viên (524H0072, 524H0189) và tài khoản chấm vào `Readme.txt`.
 - [x] Tạo tài khoản demo và dữ liệu mẫu bằng `npm.cmd run seed:demo`.
-- [x] Demo thủ công 29 và cập nhật điểm; mục 30 còn chờ chụp 3 cỡ màn hình.
+- [x] Demo thủ công 29, 26 (test realtime) và 32 (URL Render trả trang); mục 30 còn chờ chụp 3 cỡ màn hình.
+- [x] Tạo `Rubric.xlsx` từ bảng này bằng `scripts/build-rubric.ps1` (32 dòng, tổng 9,05).
+- [ ] Thay bằng file mẫu của thầy nếu giảng viên cung cấp, chép giá trị tương ứng.
 - [ ] Cấu hình SMTP thật để nâng mục 2 lên 0,25 nếu demo được.
 - [ ] Làm offline thực chất để nâng mục 31 nếu còn thời gian.
-- [ ] Điền `Rubric.xlsx` theo mẫu thầy, dùng bảng này làm nguồn.
 - [ ] Quay `demo.mp4` có cả hai thành viên, 1080p, âm thanh rõ.
 - [ ] Chụp ảnh GitHub Insights và đóng gói ZIP.
-- [ ] Xem `SUBMISSION_CHECKLIST.md` và `DEMO_02_11.md` trước khi nộp.
+- [ ] Xem `SUBMISSION_CHECKLIST.md` và `VIDEO_RECORDING_CHECKLIST.md` trước khi nộp.
