@@ -3,6 +3,7 @@ import { config, validateConfig } from './config.js';
 import { openDatabase, migrate } from './database.js';
 import { createApp } from './app.js';
 import { sendVerification, sendPasswordReset } from './mail.js';
+import { attachRealtime } from './realtime.js';
 
 validateConfig();
 const db = await openDatabase({ url: config.databaseUrl, directory: config.dataDir });
@@ -15,9 +16,11 @@ const server = app.listen(config.port, config.host, () => {
   console.info(`Mail transport: ${config.mailTransport}; SMTP port: ${Number(process.env.SMTP_PORT || 587)}; credentials configured: ${Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)}`);
 });
 let stopping = false;
+const closeRealtime=attachRealtime(server,db,config.appUrl);
 async function shutdown() {
   if (stopping) return;
   stopping = true;
+  closeRealtime();
   server.close(async () => { await db.close(); process.exit(0); });
 }
 process.on('SIGINT', shutdown);

@@ -71,6 +71,30 @@ test('welcome landing stays accessible without an API connection and links to re
   assert.equal(calls.some(call=>call.url.startsWith('/api/notes')),false);
 });
 
+test('live collaboration opens from a saved note without HTTP autosave and restores normal navigation',async()=>{
+  const originalSocket=globalThis.WebSocket;
+  const {Doc,encodeStateAsUpdate}=await import('yjs');
+  const doc=new Doc();doc.getText('title').insert(0,noteA.title);doc.getText('content').insert(0,noteA.content);
+  class FakeSocket {
+    readyState=1;onmessage:((event:{data:string})=>void)|null=null;onerror:unknown;onclose:unknown;
+    constructor(public url:string){queueMicrotask(()=>this.onmessage?.({data:JSON.stringify({type:'state',epoch:'ui-test',readOnly:false,update:Buffer.from(encodeStateAsUpdate(doc)).toString('base64')})}));}
+    send(){}close(){}
+  }
+  globalThis.WebSocket=FakeSocket as unknown as typeof WebSocket;
+  try{
+    respond=url=>url.includes('?')?json(page([noteA])):json({note:noteA});mount();const actor=user();
+    await actor.click(await screen.findByRole('button',{name:'Mở ghi chú Ghi chú A'}));
+    await actor.click(await screen.findByRole('button',{name:'Cộng tác trực tiếp'}));
+    await waitFor(()=>assert.equal(screen.getByLabelText<HTMLInputElement>('Tiêu đề trực tiếp').value,noteA.title));
+    assert.equal(screen.queryByLabelText('Tiêu đề'),null);
+    assert.ok(screen.getByText('Đã đồng bộ'));
+    assert.equal(calls.filter(call=>call.method==='PATCH').length,0);
+    await actor.click(screen.getByRole('button',{name:'Đóng cộng tác'}));
+    assert.equal(screen.queryByRole('region',{name:'Cộng tác trực tiếp'}),null);
+    await actor.click(screen.getByRole('button',{name:'Ghi chú mới'}));assert.equal(titleInput().value,'');
+  }finally{cleanup();globalThis.WebSocket=originalSocket;doc.destroy();}
+});
+
 test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
   mount();
   const actor = user();

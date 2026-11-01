@@ -7,10 +7,10 @@ Học kỳ I, năm học 2026-2027
 Họ tên thành viên 1: Nguyễn Hải Triều
 MSSV thành viên 1:   524H0072
 Họ tên thành viên 2: Dương Phạm Thái
-MSSV thành viên 2:   [CẦN ĐIỀN]
+MSSV thành viên 2:   524H0189
 
 Repository GitHub: https://github.com/rumnopro0809/503073-final-project
-URL ứng dụng online: [CHƯA TRIỂN KHAI - điền sau khi deploy]
+URL ứng dụng online: https://notes-503073.onrender.com/
 Hạn nộp: trước 23:59 ngày 02/11/2026
 Ngày hoàn thành tài liệu: 01/11/2026
 
@@ -31,7 +31,8 @@ Ngày hoàn thành tài liệu: 01/11/2026
 2. CHẠY LOCAL (CÁCH KHUYẾN NGHỊ ĐỂ CHẤM BÀI)
 ----------------------------------------------------------------------
 
-Mở terminal tại thư mục gốc của project.
+Trong gói nộp, mở terminal tại thư mục source (nơi có package.json).
+Nếu chạy từ repository GitHub, mở tại thư mục gốc của project.
 
 Windows PowerShell:
 
@@ -64,8 +65,12 @@ Lưu ý:
 
 
 ----------------------------------------------------------------------
-3. TÀI KHOẢN DÙNG ĐỂ CHẤM BÀI
+3. TÀI KHOẢN DÙNG ĐỂ CHẤM BÀI (BẢN LOCAL)
 ----------------------------------------------------------------------
+
+Các tài khoản dưới đây được tạo bằng seed:demo trên bản local.
+Database Render riêng: chưa tạo các tài khoản chấm này trên online.
+Online hiện chưa cấu hình gửi email thật.
 
 Tài khoản A (chủ ghi chú, có dữ liệu mẫu):
     Email:    rumnopro0809@gmail.com
@@ -78,7 +83,7 @@ Tài khoản B (dùng để thử chia sẻ và quyền):
 Ghi chú "Ghi chú bảo mật" của tài khoản A dùng mật khẩu riêng:
     Note@1234
 
-Dữ liệu mẫu đi kèm trong database local gồm 6 ghi chú, 3 nhãn
+Sau khi chạy npm run seed:demo, database local có 6 ghi chú, 3 nhãn
 (Học tập, Công việc, Cá nhân), 2 tệp đính kèm, 1 ghi chú được bảo vệ
 và 2 ghi chú chia sẻ cho tài khoản B (một chỉ đọc, một được sửa).
 
@@ -167,6 +172,11 @@ Nâng cao:
   hoặc Được sửa; đổi quyền và thu hồi.
 - Khu vực "Được chia sẻ với tôi", hiển thị người chia sẻ, thời điểm,
   quyền và thông báo chia sẻ mới trong ứng dụng.
+- Cộng tác trực tiếp (mục 26): A chia sẻ cho B quyền Được sửa; cả hai
+  mở cùng ghi chú và bấm "Cộng tác trực tiếp". Gõ ở hai cửa sổ để xem
+  thay đổi tức thời. Chờ "Đã đồng bộ" rồi đóng và mở lại kiểm tra lưu.
+  Người chỉ đọc xem trực tiếp nhưng không sửa. Mất mạng tạm thời sẽ
+  thử kết nối lại khi giữ trang mở. Hướng dẫn đầy đủ: source/REALTIME.md.
 
 Giao diện:
 - Responsive cho điện thoại, máy tính bảng và desktop.
@@ -181,13 +191,13 @@ Giao diện:
 
 Các mục sau chưa có hoặc mới một phần, không tính là đã hoàn thành:
 
-- Cộng tác thời gian thực bằng WebSocket/Yjs (mục 26).
-  Hiện chỉ phát hiện và xử lý xung đột phiên bản, chưa đồng bộ trực tiếp.
 - AI Summary (mục 27) và AI Q&A có dẫn nguồn (mục 28).
 - Offline đầy đủ (mục 31): chưa có service worker, cache ghi chú tài
   khoản và đồng bộ khi có mạng lại. Chế độ khách dùng localStorage chỉ
   là một phần.
-- Triển khai online (mục 32): chưa có URL công khai hoặc Docker Compose.
+- Đã triển khai online tại https://notes-503073.onrender.com/.
+  Đã thử HTTPS, đăng ký/phiên, tạo/sửa/đọc ghi chú và tệp trên database Render.
+  Cần quay video mục 32; email thật và dữ liệu mẫu online còn chưa có.
 - SMTP thật và PostgreSQL server riêng chưa được kiểm chứng trong bộ
   test tự động; local dùng file mail và PGlite.
 - Chưa chụp thủ công đủ ba cỡ màn hình 375px, 768px, 1440px và chưa

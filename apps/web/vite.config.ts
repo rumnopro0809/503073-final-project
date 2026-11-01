@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: 'localhost', port: Number(env.WEB_PORT || 5173), strictPort: true,
       fs: { deny: ['.env', '.env.*', '*.{crt,pem,key}', '**/.git/**', '**/.data/**'] },
-      proxy: { '/api': `http://127.0.0.1:${env.API_PORT || 3001}` },
+      proxy: { '/api': {target:`http://127.0.0.1:${env.API_PORT || 3001}`,ws:true} },
     },
     build: { outDir: '../../build/web', emptyOutDir: true },
   };

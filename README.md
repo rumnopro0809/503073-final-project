@@ -5,12 +5,13 @@
 ## Trạng thái
 
 Cập nhật ngày 01/11/2026. Phần lõi đã chạy được: đăng ký, đăng nhập/đăng xuất, xác minh email, quên/đặt lại mật khẩu, hồ sơ và avatar, đổi mật khẩu, tùy chọn hiển thị (cỡ chữ, mật độ, sáng/tối, màu ghi chú). Ghi chú có tạo/sửa/xóa, tự lưu, lưới/danh sách, tìm kiếm, ghim, nhãn, lọc, nhắc việc và chế độ khách lưu cục bộ. Đã có đính kèm ảnh/video/tệp, bảo vệ từng ghi chú bằng mật khẩu, chia sẻ chỉ đọc/được sửa, thu hồi quyền, khu vực “Được chia sẻ với tôi” và thông báo chia sẻ trong ứng dụng.
-
-Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **125 bài test đạt**, TypeScript và build đạt. Lighthouse ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
+Giao diện dùng GSAP, tôn trọng giảm chuyển động và có breakpoint mobile/tablet/desktop. Font `Be Vietnam Pro` và `Literata` được self-host qua `@fontsource`, không phụ thuộc Google Fonts. **136 bài test đạt**, TypeScript và build đạt. Lighthouse trước khi thêm realtime ngày 01/11: Accessibility 100, Best Practices 100, SEO 100.
 
 Đã kiểm chứng thủ công trên trình duyệt: đăng ký, xác minh email, quên/đặt lại mật khẩu, đăng nhập/đăng xuất, lưới/danh sách, tìm kiếm, chia sẻ A→B (đọc và sửa), mở khóa ghi chú bảo vệ, tải PNG/TXT, sáng/tối và ghi chú khách sau khi tải lại.
 
-Chưa hoàn thành: cộng tác thời gian thực bằng WebSocket/Yjs, AI Summary, AI Q&A, offline đầy đủ (service worker/cache tài khoản/đồng bộ) và triển khai online. SMTP thật và PostgreSQL server riêng chưa được kiểm chứng; local dùng PGlite và thư lưu ở `.data/mail`. Hạn nộp là **trước 23:59 ngày 02/11/2026**.
+Đã ghép cộng tác trực tiếp bằng WebSocket/Yjs, lưu snapshot trong PostgreSQL và kiểm tra quyền từng cập nhật. Cách dùng và giới hạn: [REALTIME.md](REALTIME.md). Bản online: https://notes-503073.onrender.com/; SMTP Mailjet đã được người dùng xác nhận nhận thư. Local dùng PGlite và thư lưu ở `.data/mail` khi cấu hình file transport.
+
+Chưa hoàn thành: AI Summary, AI Q&A và offline đầy đủ (service worker/cache tài khoản/đồng bộ). Hạn nộp là **trước 23:59 ngày 02/11/2026**. Các chức năng đã làm vẫn cần xuất hiện trong video demo.
 
 Repository riêng tư: [rumnopro0809/503073-final-project](https://github.com/rumnopro0809/503073-final-project), được tạo theo tài khoản người dùng xác nhận ngày 16/10/2026.
 
@@ -81,7 +82,7 @@ Chi tiết cách chấm và cấu hình email nằm trong [Readme.txt](Readme.tx
 - Tài khoản: bcrypt, cookie phiên HttpOnly, Nodemailer.
 - Email: Nodemailer; local ghi tệp tại `.data/mail`, SMTP thật chưa cấu hình.
 
-Đã cài dependency nhưng **chưa ghép**: `ws`/Yjs cho cộng tác thời gian thực.
+`ws`/Yjs đã ghép cho tiêu đề và nội dung khi bật **Cộng tác trực tiếp** ở cả hai cửa sổ. Hỗ trợ ghép thay đổi đồng thời, tự kết nối lại và xác nhận lưu sau commit; xem [REALTIME.md](REALTIME.md).
 
 Chưa tích hợp: AI/LLM, service worker/IndexedDB cho offline đầy đủ, Docker Compose và triển khai HTTPS online. Dependency được khóa trong package.json và package-lock.json. Nhóm học JavaScript/TypeScript, HTTP và SQL thông qua từng chức năng của project.
 

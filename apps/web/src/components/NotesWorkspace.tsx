@@ -17,6 +17,7 @@ import { normalizePreferences, type Preferences } from '../preferences';
 import { NoteAttachments } from './NoteAttachments';
 import { NoteSecurity, type ProtectionChange } from './NoteSecurity';
 import { NoteShares } from './NoteShares';
+import { CollaborativeEditor } from './CollaborativeEditor';
 
 interface Props {
   guest?: boolean;
@@ -188,6 +189,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     return () => window.removeEventListener('storage', refresh);
   }, [guest]);
   const editor = autosave.state;
+  const [liveNote,setLiveNote]=useState<Note|null>(null);
+  const [liveDirty,setLiveDirty]=useState(false);
+  const liveFlushRef=useRef<(()=>Promise<boolean>)|null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [editorError, setEditorError] = useState('');
   const detailGeneration = useRef(0);
@@ -200,7 +204,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     }
   }, [editor, navigationBusy]);
 
-  const dirty = Boolean(editor?.dirty || editor?.saving);
+  const dirty = Boolean(editor?.dirty || editor?.saving || liveDirty);
   useEffect(() => {
     const controller = new AbortController();
     const revision = saveRevision.current;
@@ -221,7 +225,9 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     if (navigating.current) return false;
     navigating.current = true; setNavigationBusy(true);
     try {
-      if (await autosave.flush()) return true;
+      if (liveFlushRef.current) {
+        if(await liveFlushRef.current())return true;
+      } else if (await autosave.flush()) return true;
       if (autosave.getState()?.authenticationRequired) return false;
       return window.confirm('Chưa lưu được toàn bộ thay đổi. Bản nháp sẽ bị bỏ nếu tiếp tục. Bạn có muốn tiếp tục?');
     } finally { navigating.current = false; setNavigationBusy(false); }
@@ -307,10 +313,12 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   }
   async function openNew() {
     if (!await prepareToLeave()) return;
+    setLiveNote(null);
     cancelOpening(); setLockedId(null);setEditorError(''); setEditorKey(value => value + 1); autosave.open(null);
   }
   async function closeEditor() {
     if (!await prepareToLeave()) return;
+    setLiveNote(null);setReload(value=>value+1);
     cancelOpening(); restoreNewFocus.current = true; autosave.close(); setEditorError('');
   }
   function changeDraft(draft: NoteDraft) {
@@ -446,6 +454,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   async function openNote(note: Note) {
     if (editor?.note?.id === note.id && !openingId) return;
     if (!await prepareToLeave()) return;
+    setLiveNote(null);
     cancelOpening();
     const generation = detailGeneration.current;
     const controller = new AbortController();
@@ -510,7 +519,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         <button ref={newButton} type="button" className="primary-button new-note-button" disabled={navigationBusy} onClick={() => void openNew()}><Plus size={17} /> Ghi chú mới</button>
       </div>
     </div>
-    {!editor && <button type="button" className="quick-note" onClick={() => void openNew()} disabled={navigationBusy}><Plus size={20} />Ghi lại điều gì đó…<span>Tự lưu</span></button>}
+    {!editor && !liveNote && <button type="button" className="quick-note" onClick={() => void openNew()} disabled={navigationBusy}><Plus size={20} />Ghi lại điều gì đó…<span>Tự lưu</span></button>}
     <div className="notes-filter-row">
       <button type="button" className={`quiet-button pin-filter ${pinnedOnly ? 'active' : ''}`} aria-pressed={pinnedOnly}
         onClick={() => setPinnedOnly(value => !value)}><Pin size={15} />Chỉ ghi chú đã ghim</button>
@@ -526,11 +535,16 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
     {editorError && <div className="notice error" role="alert">{editorError}</div>}
     {lockedId&&<section className="workspace-panel" aria-label="Mở khóa ghi chú"><h3>Ghi chú được bảo vệ</h3><form onSubmit={event=>{event.preventDefault();void unlockNote();}}><label>Mật khẩu ghi chú<input type="password" required autoComplete="off" value={unlockPassword} disabled={unlockBusy} onChange={event=>setUnlockPassword(event.target.value)}/></label><button className="primary-button" disabled={unlockBusy}>{unlockBusy?'Đang mở khóa…':'Mở khóa ghi chú'}</button></form><button type="button" className="quiet-button" disabled={unlockBusy} onClick={()=>{setLockedId(null);setUnlockPassword('');}}>Hủy mở khóa</button></section>}
     {openingId && <p className="notes-loading" role="status"><LoaderCircle className="spin" size={17} /> Đang mở ghi chú…</p>}
+    {liveNote&&<CollaborativeEditor key={liveNote.id} noteId={liveNote.id} busy={navigationBusy} onClose={()=>void closeEditor()} onDirty={setLiveDirty} flushRef={liveFlushRef}/>}
     {editor && <NoteEditor key={editorKey} draft={editor.draft} isNew={editor.note === null}
       onChange={changeDraft} onClose={() => void closeEditor()} disabled={navigationBusy} readOnly={editor.note?.share?.permission==='read'}
       saveStatus={editor.status} saveError={editor.error} fieldErrors={editor.fields}
       onRetry={() => {if(editor.note?.protected&&editor.error?.includes('bảo vệ'))setLockedId(editor.note.id);else void autosave.retry();}} onDelete={editor.note?.share?undefined:() => void deleteNote()}
       organization={<>{editor.note?.share&&<p className="notice success">{editor.note.share.ownerName} chia sẻ · {editor.note.share.permission==='read'?'Chỉ đọc':'Được sửa'} · {new Date(editor.note.share.sharedAt).toLocaleString('vi-VN')}</p>}
+        {!guest&&editor.note&&<button type="button" className="quiet-button" disabled={navigationBusy} onClick={()=>void organizedAction(async()=>{
+          const id=autosave.getState()?.note?.id;if(!id)return;
+          const fresh=await notesApi.read(id);autosave.close();setLiveNote(fresh);
+        })}><Share2 size={15}/>Cộng tác trực tiếp</button>}
         {!editor.note?.share&&<NoteOrganization note={editor.note} labels={labels} disabled={navigationBusy}
         onPin={pinned => void organizeNote({ pinned })} onLabel={(id, checked) => void organizeNote({ labelId: id, checked })}
         onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />}

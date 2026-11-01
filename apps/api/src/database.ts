@@ -85,6 +85,8 @@ export async function migrate(db: Database) {
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS daily BOOLEAN NOT NULL DEFAULT FALSE');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS live_state BYTEA');
+    await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS live_epoch TEXT');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS password_hash TEXT');
     await sql.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS protection_version INTEGER NOT NULL DEFAULT 1');
     await sql.query(`CREATE TABLE IF NOT EXISTS note_unlocks (
