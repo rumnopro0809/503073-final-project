@@ -4,12 +4,14 @@ import { openDatabase, migrate } from './database.js';
 import { createApp } from './app.js';
 import { sendVerification, sendPasswordReset } from './mail.js';
 import { attachRealtime } from './realtime.js';
+import {geminiSummarizer} from './summary.js';
 
 validateConfig();
 const db = await openDatabase({ url: config.databaseUrl, directory: config.dataDir });
 await migrate(db);
 const app = createApp({ db, appUrl: config.appUrl, production: config.production, sendVerification, sendPasswordReset,
-  trustProxy: config.trustProxy, webDir: config.production ? path.resolve('build/web') : undefined });
+  trustProxy: config.trustProxy, webDir: config.production ? path.resolve('build/web') : undefined,
+  summarize:process.env.GEMINI_API_KEY?geminiSummarizer(process.env.GEMINI_API_KEY,process.env.GEMINI_MODEL||'gemini-3.1-flash-lite'):undefined });
 const server = app.listen(config.port, config.host, () => {
   console.info(`API ready at http://${config.host}:${config.port}`);
   console.info(config.databaseUrl ? 'Database: PostgreSQL server' : 'Database: embedded PostgreSQL (.data/postgres)');

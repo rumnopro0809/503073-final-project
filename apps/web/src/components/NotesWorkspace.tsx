@@ -18,6 +18,7 @@ import { NoteAttachments } from './NoteAttachments';
 import { NoteSecurity, type ProtectionChange } from './NoteSecurity';
 import { NoteShares } from './NoteShares';
 import { CollaborativeEditor } from './CollaborativeEditor';
+import {NoteSummary} from './NoteSummary';
 
 interface Props {
   guest?: boolean;
@@ -549,7 +550,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         onPin={pinned => void organizeNote({ pinned })} onLabel={(id, checked) => void organizeNote({ labelId: id, checked })}
         onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />}
         {editor.note && !editor.note.share&&<NoteReminder key={`${editor.note.id}-${editor.note.dueAt}-${editor.note.daily}`} note={editor.note} busy={navigationBusy} onChange={changeReminder} />}
-        {!guest && editor.note && <><NoteAttachments key={editor.note.id} noteId={editor.note.id} readOnly={editor.note.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />
+        {!guest && editor.note && <><NoteSummary key={`summary-${editor.note.id}`} noteId={editor.note.id} version={editor.note.version} dirty={editor.dirty||editor.saving} busy={navigationBusy} onAction={organizedAction}/><NoteAttachments key={editor.note.id} noteId={editor.note.id} readOnly={editor.note.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />
           {!editor.note.share&&<><NoteSecurity note={editor.note} busy={navigationBusy} onProtect={protectNote} onLock={()=>void lockNote()}/><NoteShares key={`shares-${editor.note.id}`} noteId={editor.note.id} onAction={organizedAction}/></>}
           {editor.note.share&&editor.note.protected&&<button type="button" className="quiet-button" onClick={()=>void lockNote()}>Khóa lại ghi chú</button>}
         </>}</>} />}

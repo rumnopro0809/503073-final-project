@@ -95,6 +95,31 @@ test('live collaboration opens from a saved note without HTTP autosave and resto
   }finally{cleanup();globalThis.WebSocket=originalSocket;doc.destroy();}
 });
 
+test('AI Summary flushes a draft before generating, renders text safely and clears after editing',async()=>{
+  let saved={...noteA};const operations:string[]=[];
+  respond=(url,init)=>{
+    if(url.includes('?'))return json(page([saved]));
+    if(url.endsWith('/summary')){operations.push('summary');return json({summary:'<script>unsafe()</script>\nÝ chính: đã sửa.',sourceVersion:saved.version,generatedAt:new Date().toISOString()});}
+    if(init?.method==='PATCH'){operations.push('save');saved={...saved,...JSON.parse(String(init.body)),version:saved.version+1};}
+    return json({note:saved});
+  };
+  mount();const actor=user();await actor.click(await screen.findByRole('button',{name:'Mở ghi chú Ghi chú A'}));
+  await actor.type(contentInput(),' phần thêm');
+  await actor.click(screen.getByRole('button',{name:'Tóm tắt bằng AI'}));
+  await waitFor(()=>assert.ok(screen.getByText(/Ý chính: đã sửa/)));
+  assert.ok(operations.indexOf('save')<operations.indexOf('summary'));assert.equal(document.querySelector('.ai-summary-result script'),null);
+  await actor.type(contentInput(),' mới');assert.equal(document.querySelector('.ai-summary-result'),null);
+});
+
+test('AI Summary reports missing configuration and can retry without changing note content',async()=>{
+  let attempt=0;
+  respond=url=>url.includes('?')?json(page([noteA])):url.endsWith('/summary')?(++attempt===1?json({message:'AI chưa được cấu hình.'},503):json({summary:'Bản tóm tắt thật từ phản hồi API.',sourceVersion:1,generatedAt:new Date().toISOString()})):json({note:noteA});
+  mount();const actor=user();await actor.click(await screen.findByRole('button',{name:'Mở ghi chú Ghi chú A'}));
+  await actor.click(screen.getByRole('button',{name:'Tóm tắt bằng AI'}));assert.ok(await screen.findByText('AI chưa được cấu hình.'));
+  await actor.click(screen.getByRole('button',{name:'Tóm tắt bằng AI'}));assert.ok(await screen.findByText('Bản tóm tắt thật từ phản hồi API.'));
+  assert.equal(contentInput().value,noteA.content);assert.equal(calls.filter(call=>call.method==='PATCH').length,0);
+});
+
 test('sidebar settings and about keep the editor draft and remember display preferences', async () => {
   mount();
   const actor = user();

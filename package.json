@@ -14,7 +14,7 @@
     "build": "npm run typecheck && vite build --config apps/web/vite.config.ts && tsc -p apps/api/tsconfig.build.json",
     "start": "node build/api/index.js",
     "seed:demo": "node scripts/seed-demo.mjs",
-    "test": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts apps/api/test/realtime.test.ts apps/web/test/autosave.test.ts apps/web/test/notes-ui.test.tsx apps/web/test/autosave-api.test.ts apps/web/test/live-session.test.ts",
+    "test": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/api/test/auth.test.ts apps/api/test/notes.test.ts apps/api/test/realtime.test.ts apps/api/test/summary.test.ts apps/web/test/autosave.test.ts apps/web/test/notes-ui.test.tsx apps/web/test/autosave-api.test.ts apps/web/test/live-session.test.ts",
     "test:web": "tsx --tsconfig apps/web/tsconfig.json --test --test-concurrency=1 apps/web/test/autosave.test.ts apps/web/test/notes-ui.test.tsx"
   },
   "dependencies": {

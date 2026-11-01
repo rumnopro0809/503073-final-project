@@ -6,8 +6,9 @@ import { authRouter, type AuthOptions } from './auth.js';
 import { notesRouter } from './notes.js';
 import { labelsRouter } from './labels.js';
 import { attachmentsRouter } from './attachments.js';
+import {summaryRouter,type Summarize} from './summary.js';
 
-export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string }) {
+export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?: string; summarize?:Summarize }) {
   const app = express();
   app.disable('x-powered-by');
   if (options.trustProxy) app.set('trust proxy', 1);
@@ -31,6 +32,7 @@ export function createApp(options: AuthOptions & { trustProxy?: boolean; webDir?
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   app.use('/api/auth', authRouter(options));
   app.use('/api/notes', notesRouter(options.db));
+  app.use('/api/notes', summaryRouter(options.db,options.summarize,options.rateLimit!==false));
   app.use('/api/labels', labelsRouter(options.db));
   app.use('/api/attachments', attachmentsRouter(options.db));
   app.use('/api', (_req, res) => res.status(404).json({ message: 'Không tìm thấy yêu cầu này.' }));
