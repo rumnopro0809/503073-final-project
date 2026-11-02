@@ -244,6 +244,19 @@ test('profile edits update the account and password change waits for a saved dra
   await waitFor(()=>assert.equal(signedOut,1));
 });
 
+test('attachment control appears on new drafts and enables after the note is saved',async()=>{
+  const {NoteAttachments}=await import('../src/components/NoteAttachments');
+  const view=render(<NoteAttachments noteId={null} beforeUpload={async()=>true}/>);
+  const button=screen.getByRole('button',{name:'Thêm tệp đính kèm'}) as HTMLButtonElement;
+  assert.equal(button.disabled,true);
+  assert.ok(screen.getByText('Nhập tiêu đề và nội dung, chờ Đã lưu để thêm tệp vào ghi chú.'));
+  view.rerender(<NoteAttachments noteId="a" beforeUpload={async()=>true}/>);
+  await waitFor(()=>assert.equal(button.disabled,false));
+  assert.equal(screen.queryByText('Nhập tiêu đề và nội dung, chờ Đã lưu để thêm tệp vào ghi chú.'),null);
+  view.rerender(<NoteAttachments noteId="a" readOnly beforeUpload={async()=>true}/>);
+  assert.equal(screen.queryByRole('button',{name:'Thêm tệp đính kèm'}),null);
+});
+
 test('attachments flush before upload and preserve existing files after a failed removal', async () => {
   const {NoteAttachments}=await import('../src/components/NoteAttachments');
   const attachments:{url:string;method:string}[]=[]; let flush=false,removalFails=true;

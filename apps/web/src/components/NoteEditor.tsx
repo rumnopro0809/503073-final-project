@@ -16,6 +16,7 @@ export interface NoteEditorProps {
   onRetry?: () => void;
   onDelete?: () => void;
   organization?: ReactNode;
+  attachments?: ReactNode;
 }
 
 const statusLabels: Record<NoteSaveStatus, string> = {
@@ -24,7 +25,7 @@ const statusLabels: Record<NoteSaveStatus, string> = {
 };
 
 // A controlled form: persistence belongs to the autosave hook that consumes onChange.
-export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, readOnly=false, onRetry, onDelete, organization }: NoteEditorProps) {
+export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveError, fieldErrors, disabled = false, readOnly=false, onRetry, onDelete, organization, attachments }: NoteEditorProps) {
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
   const container = useRef<HTMLElement>(null);
@@ -49,6 +50,7 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
         onChange={event => onChange({ ...draft, content: event.target.value })} />
       {fieldErrors?.content && <p id={`${id}-content-error`} className="field-error">{fieldErrors.content}</p>}
     </div>
+    {attachments}
     {organization}
     <footer className="note-editor-footer">
       <span className={`note-save-status ${saveStatus}`} role="status" aria-live="polite">

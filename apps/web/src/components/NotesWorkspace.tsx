@@ -478,6 +478,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       onChange={changeDraft} onClose={() => void closeEditor()} disabled={navigationBusy} readOnly={editor.note?.share?.permission==='read'}
       saveStatus={editor.status} saveError={editor.error} fieldErrors={editor.fields}
       onRetry={() => {if(editor.note?.protected&&editor.error?.includes('bảo vệ'))setLockedId(editor.note.id);else void autosave.retry();}} onDelete={editor.note?.share?undefined:() => void deleteNote()}
+      attachments={<NoteAttachments key={editor.note?.id??'draft'} noteId={editor.note?.id??null} readOnly={editor.note?.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />}
       organization={<>{editor.note?.share&&<p className="notice success">{editor.note.share.ownerName} chia sẻ · {editor.note.share.permission==='read'?'Chỉ đọc':'Được sửa'} · {new Date(editor.note.share.sharedAt).toLocaleString('vi-VN')}</p>}
         {editor.note&&<button type="button" className="quiet-button" disabled={navigationBusy} onClick={()=>void organizedAction(async()=>{
           const id=autosave.getState()?.note?.id;if(!id)return;
@@ -486,7 +487,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
         {!editor.note?.share&&<NoteOrganization note={editor.note} labels={labels} disabled={navigationBusy}
         onPin={pinned => void organizeNote({ pinned })} onLabel={(id, checked) => void organizeNote({ labelId: id, checked })}
         onManageLabels={() => { setShowLabels(true); labelManagerButton.current?.focus(); }} />}
-        {editor.note && <><NoteSummary key={`summary-${editor.note.id}`} noteId={editor.note.id} version={editor.note.version} dirty={editor.dirty||editor.saving} busy={navigationBusy} onAction={organizedAction}/><NoteAttachments key={editor.note.id} noteId={editor.note.id} readOnly={editor.note.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />
+        {editor.note && <><NoteSummary key={`summary-${editor.note.id}`} noteId={editor.note.id} version={editor.note.version} dirty={editor.dirty||editor.saving} busy={navigationBusy} onAction={organizedAction}/>
           {!editor.note.share&&<><NoteSecurity note={editor.note} busy={navigationBusy} onProtect={protectNote} onLock={()=>void lockNote()}/><NoteShares key={`shares-${editor.note.id}`} noteId={editor.note.id} onAction={organizedAction}/></>}
           {editor.note.share&&editor.note.protected&&<button type="button" className="quiet-button" onClick={()=>void lockNote()}>Khóa lại ghi chú</button>}
         </>}</>} />}
