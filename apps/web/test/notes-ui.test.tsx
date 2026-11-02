@@ -43,6 +43,7 @@ beforeEach(() => {
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     if (url.startsWith('/api/attachments/notes/')) return json({attachments:[]});
+    if (/^\/api\/notes\/[^/]+\/shares$/.test(url)) return json({shares:[]});
     if (url === '/api/auth/preferences') {
       if (init?.method === 'PATCH') preferences = {...preferences,...JSON.parse(String(init.body))};
       return json({preferences});

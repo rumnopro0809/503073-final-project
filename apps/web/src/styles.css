@@ -1503,8 +1503,20 @@ form .primary-button {
 @media(max-width:720px) { .note-questions textarea { font-size:16px; } }
 .note-attachments h3 { margin-top:0; font-size:15px; }
 .attach-file-button { display:inline-flex; align-items:center; gap:8px; min-height:42px; border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
-.note-create-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.attachment-toolbar-slot { display:contents; }
+.note-editor-layout { display:grid; gap:20px; align-items:start; margin-bottom:24px; }
+.note-editor-layout > .note-editor { min-width:0; width:100%; margin:0; max-width:none; }
+.note-tools-panel { min-width:0; border:1px solid var(--border); border-radius:16px; padding:20px; background:var(--surface,#fff); }
+.note-tools-panel > h2 { margin:0 0 18px; font-size:15px; }
+:root[data-theme=dark] .note-tools-panel { background:#25222e; color:#eeeaf5; }
+.note-tools-panel .note-sharing { margin:0; padding:0; border:0; }
+.note-tools-panel .note-attachments { padding:18px 0 0; }
+.note-tools-panel textarea,.note-tools-panel select { width:100%; min-width:0; box-sizing:border-box; }
+.note-tools-panel p { font-size:12px; line-height:1.7; color:var(--muted); }
+.note-tools-panel .note-sharing li { min-width:0; overflow-wrap:anywhere; }
+@media(min-width:1100px) {
+  .note-editor-layout.with-tools { grid-template-columns:minmax(0,1fr) 300px; }
+  .note-tools-panel { position:sticky; top:96px; max-height:calc(100dvh - 116px); overflow-y:auto; scrollbar-width:thin; }
+}
 .note-attachments p { font-size:12px; line-height:1.7; color:var(--muted); }
 .note-attachments label { display:grid; gap:8px; font-size:13px; }
 .note-attachments input { max-width:100%; font:inherit; }

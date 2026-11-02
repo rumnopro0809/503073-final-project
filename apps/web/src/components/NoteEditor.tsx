@@ -29,9 +29,11 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
   const container = useRef<HTMLElement>(null);
+  const tools = useRef<HTMLElement>(null);
   useEntrance(container, null, [], true);
+  useEntrance(tools, null, [], true);
   useEffect(() => { titleInput.current?.focus(); }, []);
-  return <section ref={container} className="note-editor" aria-labelledby={`${id}-heading`}>
+  return <div className={`note-editor-layout${attachments?' with-tools':''}`}><section ref={container} className="note-editor" aria-labelledby={`${id}-heading`}>
     <header className="note-editor-header">
       <div className="note-editor-heading"><StickyNote size={18} /><h2 id={`${id}-heading`}>{isNew ? 'Ghi chú mới' : 'Chỉnh sửa ghi chú'}</h2></div>
       <button type="button" className="icon-button" onClick={onClose} disabled={disabled} aria-label="Đóng trình soạn ghi chú"><X size={19} /></button>
@@ -50,7 +52,6 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
         onChange={event => onChange({ ...draft, content: event.target.value })} />
       {fieldErrors?.content && <p id={`${id}-content-error`} className="field-error">{fieldErrors.content}</p>}
     </div>
-    {attachments}
     {organization}
     <footer className="note-editor-footer">
       <span className={`note-save-status ${saveStatus}`} role="status" aria-live="polite">
@@ -64,5 +65,5 @@ export function NoteEditor({ draft, isNew, onChange, onClose, saveStatus, saveEr
     {saveError && <p className="notice error" role="alert">{saveError}</p>}
     {saveStatus === 'error' && onRetry && <button className="quiet-button" type="button" onClick={onRetry} disabled={disabled}>Thử kết nối và lưu lại</button>}
     <p className="draft-explanation">Ghi chú tự lưu khi có đủ tiêu đề và nội dung. Hãy chờ trạng thái Đã lưu trước khi rời trang.</p>
-  </section>;
+  </section>{attachments&&<aside ref={tools} className="note-tools-panel" aria-label="Chia sẻ và tệp đính kèm"><h2>Chia sẻ &amp; tệp đính kèm</h2>{attachments}</aside>}</div>;
 }

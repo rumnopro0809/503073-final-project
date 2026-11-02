@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { fileBase64 } from '../files';
 import { Paperclip } from 'lucide-react';
-import { createPortal } from 'react-dom';
 
 type Attachment = {id:string;name:string;mediaType:string;size:number;url:string};
-export function NoteAttachments({noteId,beforeUpload,readOnly=false,actionTarget}:{noteId:string|null;beforeUpload:()=>Promise<boolean>;readOnly?:boolean;actionTarget?:HTMLElement|null}) {
+export function NoteAttachments({noteId,beforeUpload,readOnly=false}:{noteId:string|null;beforeUpload:()=>Promise<boolean>;readOnly?:boolean}) {
   const input=useRef<HTMLInputElement>(null);
   const [files,setFiles]=useState<Attachment[]>([]);
   const [busy,setBusy]=useState(false);
@@ -43,11 +42,11 @@ export function NoteAttachments({noteId,beforeUpload,readOnly=false,actionTarget
   }
   const picker=!readOnly&&<><button type="button" className="quiet-button attach-file-button" title={!noteId?'Nhập tiêu đề và nội dung, chờ Đã lưu để thêm tệp vào ghi chú.':'Thêm tệp vào ghi chú đang mở · tối đa 10 MB/tệp'} disabled={!noteId||busy||loading} onClick={()=>input.current?.click()}><Paperclip size={17}/>Thêm tệp đính kèm</button>
     <input ref={input} aria-label="Đính kèm tệp" type="file" hidden disabled={!noteId||busy||loading} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file) void upload(file);}} /></>;
-  return <>{actionTarget&&createPortal(picker,actionTarget)}<section className={`note-attachments${actionTarget?' toolbar-attachments':''}`} aria-label="Tệp đính kèm" hidden={Boolean(actionTarget)&&!files.length&&!busy&&!loading&&!error}>
+  return <section className="note-attachments" aria-label="Tệp đính kèm">
     <h3>Tệp đính kèm</h3>
     <p>Ảnh, video hoặc tệp · tối đa 10 MB/tệp, 20 tệp/ghi chú. Ảnh PNG/JPEG/WebP và video MP4/WebM có bản xem trước.</p>
-    {!actionTarget&&picker}
-    {!readOnly&&!noteId&&!actionTarget&&<p>Nhập tiêu đề và nội dung, chờ Đã lưu để thêm tệp vào ghi chú.</p>}
+    {picker}
+    {!readOnly&&!noteId&&<p>Nhập tiêu đề và nội dung, chờ Đã lưu để thêm tệp vào ghi chú.</p>}
     {(busy||loading)&&<p role="status">{busy?'Đang xử lý tệp…':'Đang tải tệp…'}</p>}
     {error&&<div><p className="notice error" role="alert">{error}</p><button type="button" className="quiet-button" disabled={busy} onClick={()=>setRevision(value=>value+1)}>Thử tải tệp lại</button></div>}
     <ul>{files.map(file=><li key={file.id}>
@@ -56,5 +55,5 @@ export function NoteAttachments({noteId,beforeUpload,readOnly=false,actionTarget
       <a href={`${file.url}?download=1`} download={file.name}>{file.name} · {(file.size/1024).toFixed(1)} KB</a>
       {!readOnly&&<button type="button" className="quiet-button" disabled={busy} onClick={()=>void remove(file)}>Xóa tệp {file.name}</button>}
     </li>)}</ul>
-  </section></>;
+  </section>;
 }
