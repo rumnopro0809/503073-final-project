@@ -430,7 +430,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       </div>
       <nav className="sidebar-navigation" aria-label="Nhóm ghi chú">
         <button type="button" className="sidebar-item" aria-current={panel==='notes'&&!shared?'page':undefined} onClick={()=>{setShared(false);setPanel('notes');}}><StickyNote size={18}/>Tất cả ghi chú</button>
-        <button type="button" className="sidebar-item" aria-current={shared?'page':undefined} onClick={showShared}><Share2 size={18}/>Được chia sẻ với tôi{sharedCount>0?` (${sharedCount} mới)`:''}</button>
+        <button type="button" className={`sidebar-item${sharedCount>0?' shared-unread':''}`} aria-current={shared?'page':undefined} onClick={showShared}><Share2 size={18}/>Được chia sẻ với tôi{sharedCount>0?` (${sharedCount} mới)`:''}</button>
       </nav>
       <div className="sidebar-labels"><label className="filter-select"><span>Lọc theo nhãn</span><select aria-label="Lọc theo nhãn" value={labelId} onChange={event => { setLabelId(event.target.value); setPanel('notes'); }}>
         <option value="">Tất cả nhãn</option>{labels.map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></label>
@@ -445,7 +445,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       </nav><p className="sidebar-storage">Lưu trên máy chủ · Tự lưu</p>
     </aside>
     <div className="workspace-content" hidden={panel !== 'notes'}>
-    {sharedCount>0&&<div className="notice success" role="status">Bạn có {sharedCount} ghi chú được chia sẻ mới. <button type="button" className="quiet-button" onClick={showShared}>Xem ghi chú được chia sẻ</button></div>}
+    {sharedCount>0&&<div className="notice shared-notification" role="status"><span>Bạn có {sharedCount} ghi chú được chia sẻ mới.</span><button type="button" className="quiet-button shared-notification-button" onClick={showShared}>Xem ghi chú được chia sẻ</button></div>}
     <div className="notes-toolbar">
       <div><h2>{shared?'Được chia sẻ với tôi':'Những điều muốn nhớ'}</h2><p role="status">{loading || search.trim() !== query ? 'Đang tìm ghi chú của bạn…' : error ? 'Chưa thể tải danh sách ghi chú.' : `${notes.length} ghi chú${filtered ? ' phù hợp' : ' đã tải'}${pagination?.hasMore ? ' · còn ghi chú khác' : ''}`}</p></div>
       <div className="notes-actions">
