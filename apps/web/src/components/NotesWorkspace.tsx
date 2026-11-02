@@ -547,7 +547,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       {preferenceError && <p role="alert">{preferenceError}</p>}
       <button type="button" className="quiet-button" onClick={() => setPanel('notes')}>Quay lại ghi chú</button>
     </section>}
-    {panel === 'about' && <section className="workspace-panel" aria-label="Về ứng dụng"><h2>Về ghi chú.</h2><p>Không gian cho ý tưởng, công việc và những điều muốn nhớ.</p>
+    {panel === 'about' && <section className="workspace-panel" aria-label="Về ứng dụng"><h2>Về NoteNgay</h2><p>Không gian cho ý tưởng, công việc và những điều muốn nhớ.</p>
       <dl><dt>Ghi chú tài khoản</dt><dd>Tự lưu trên máy chủ và mở lại bằng cùng tài khoản trên thiết bị khác. Tài khoản chưa xác minh email vẫn dùng đầy đủ chức năng.</dd>
         <dt>Dự án</dt><dd>503073 · Web Programming &amp; Applications · Nguyễn Hải Triều và Thái.</dd></dl>
       <button type="button" className="quiet-button" onClick={() => setPanel('notes')}>Quay lại ghi chú</button>

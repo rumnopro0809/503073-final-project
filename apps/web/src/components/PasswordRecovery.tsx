@@ -11,7 +11,7 @@ export function PasswordRecovery({ reset = false, onReset }: { reset?: boolean; 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  useEffect(() => { document.title = `${reset ? 'Đặt lại' : 'Quên'} mật khẩu — Ghi chú`; }, [reset]);
+  useEffect(() => { document.title = `${reset ? 'Đặt lại' : 'Quên'} mật khẩu — NoteNgay`; }, [reset]);
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setMessage('');
     try {
@@ -23,7 +23,7 @@ export function PasswordRecovery({ reset = false, onReset }: { reset?: boolean; 
     } finally { setBusy(false); }
   }
   return <main className="account-page"><section className="workspace-panel recovery-panel">
-    <Link to="/login" className="brand">ghi chú.</Link>
+    <Link to="/login" className="brand">NoteNgay.</Link>
     <h1>{reset ? 'Đặt lại mật khẩu' : 'Bạn quên mật khẩu?'}</h1>
     <p>{reset ? 'Nhập mật khẩu mới hai lần. Sau khi hoàn tất, bạn cần đăng nhập lại.' : 'Nhập email tài khoản để nhận liên kết đặt lại mật khẩu.'}</p>
     {message && <p className="notice success" role="status">{message}</p>}

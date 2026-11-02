@@ -8,7 +8,7 @@ import { PasswordRecovery } from './components/PasswordRecovery';
 import { ProfilePanel } from './components/ProfilePanel';
 
 function Brand() {
-  return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>ghi chú<span className="brand-dot">.</span></span></div>;
+  return <div className="brand"><span className="brand-mark"><StickyNote size={23} strokeWidth={1.9} /></span><span>NoteNgay<span className="brand-dot">.</span></span></div>;
 }
 
 function Story() {
@@ -65,7 +65,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
   const location = useLocation();
   const verification = new URLSearchParams(location.search).get('verification');
 
-  useEffect(() => { document.title = `${register ? 'Đăng ký' : 'Đăng nhập'} — Ghi chú`; }, [register]);
+  useEffect(() => { document.title = `${register ? 'Đăng ký' : 'Đăng nhập'} — NoteNgay`; }, [register]);
   function update(name: keyof typeof values, value: string) {
     setValues(current => ({ ...current, [name]: value }));
     setFields(current => ({ ...current, [name]: '' }));
@@ -120,7 +120,7 @@ function AuthPage({ mode, onAuthenticated, reauthEmail }: { mode: 'login' | 'reg
         {!register && <Link className="welcome-backlink" to="/forgot-password">Quên mật khẩu?</Link>}
         <div className="form-assurance"><ShieldCheck size={15} /><span>Không gian của bạn, chỉ bạn mới có thể truy cập.</span></div>
       </div>
-      <footer className="auth-bottom"><span>© {new Date().getFullYear()} ghi chú.</span><span>Viết xuống. Nhẹ đầu hơn.</span></footer>
+      <footer className="auth-bottom"><span>© {new Date().getFullYear()} NoteNgay.</span><span>Viết xuống. Nhẹ đầu hơn.</span></footer>
     </section>
   </main>;
 }
@@ -139,7 +139,7 @@ function Home({ user, onUserChange, onLogout, onSessionExpired, emailFailed, aut
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => { document.title = 'Ghi chú của bạn — Ghi chú'; }, []);
+  useEffect(() => { document.title = 'Ghi chú của bạn — NoteNgay'; }, []);
   async function logout() {
     if (beforeLeaveRef.current) { if (!await beforeLeaveRef.current()) return; }
     else if (draftDirty && !window.confirm('Bản nháp chưa được lưu. Bạn có muốn bỏ thay đổi và đăng xuất?')) return;

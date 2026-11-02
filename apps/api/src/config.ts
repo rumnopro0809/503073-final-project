@@ -10,7 +10,7 @@ export const config = {
   dataDir: path.resolve(process.env.DATA_DIR || '.data/postgres'),
   mailDir: path.resolve('.data/mail'),
   mailTransport: process.env.MAIL_TRANSPORT || 'file',
-  mailFrom: process.env.MAIL_FROM || 'Ghi chu <no-reply@example.test>',
+  mailFrom: process.env.MAIL_FROM || 'NoteNgay <no-reply@example.test>',
   trustProxy: process.env.TRUST_PROXY === 'true',
 };
 

@@ -53,7 +53,7 @@ async function sendAccountMail(email: string, subject: string, text: string) {
   }
 }
 
-export const sendVerification: SendVerification = (email, activationUrl) => sendAccountMail(email, 'Xác minh tài khoản Ghi chú',
-  `Chào bạn,\n\nNhấn liên kết dưới đây để xác minh tài khoản Ghi chú:\n${activationUrl}\n\nLiên kết có hiệu lực trong 24 giờ. Bạn vẫn có thể dùng ứng dụng trước khi xác minh.\nNếu không đăng ký tài khoản, bạn có thể bỏ qua thư này.`);
-export const sendPasswordReset: SendVerification = (email, url) => sendAccountMail(email, 'Đặt lại mật khẩu Ghi chú',
+export const sendVerification: SendVerification = (email, activationUrl) => sendAccountMail(email, 'Xác minh tài khoản NoteNgay',
+  `Chào bạn,\n\nNhấn liên kết dưới đây để xác minh tài khoản NoteNgay:\n${activationUrl}\n\nLiên kết có hiệu lực trong 24 giờ. Bạn vẫn có thể dùng ứng dụng trước khi xác minh.\nNếu không đăng ký tài khoản, bạn có thể bỏ qua thư này.`);
+export const sendPasswordReset: SendVerification = (email, url) => sendAccountMail(email, 'Đặt lại mật khẩu NoteNgay',
   `Chào bạn,\n\nMở liên kết dưới đây để đặt lại mật khẩu:\n${url}\n\nLiên kết chỉ dùng một lần, có hiệu lực 30 phút. Nếu không yêu cầu đặt lại, hãy bỏ qua email này. Mật khẩu hiện tại vẫn giữ nguyên cho đến khi bạn hoàn tất đặt lại.`);
