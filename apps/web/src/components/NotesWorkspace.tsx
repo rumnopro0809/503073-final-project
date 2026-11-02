@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X, Settings, Info, LogOut, UserRound, LockKeyhole, Share2 } from 'lucide-react';
+import { Grid2X2, List, LoaderCircle, Pin, Plus, RefreshCw, Search, StickyNote, Tag, X, Settings, Info, LogOut, UserRound, LockKeyhole, Share2, Paperclip } from 'lucide-react';
 import { api as serverApi, ApiError } from '../api';
 import type { Label, Note, NoteDraft, NoteSort, NotesResponse } from '../types/notes';
 import { NoteEditor } from './NoteEditor';
@@ -169,6 +169,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
   const detailGeneration = useRef(0);
   const detailController = useRef<AbortController | null>(null);
   const newButton = useRef<HTMLButtonElement>(null);
+  const [attachmentTarget,setAttachmentTarget]=useState<HTMLSpanElement|null>(null);
   const restoreNewFocus = useRef(false);
   useEffect(() => {
     if (!editor && !navigationBusy && restoreNewFocus.current) {
@@ -454,7 +455,10 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
           <button className="icon-button" type="button" aria-label="Xem dạng danh sách" aria-pressed={view === 'list'} onClick={() => changeView('list')}><List size={17} /></button>
         </div>
         <button type="button" className="quiet-button" onClick={() => setReload(value => value + 1)} disabled={loading || navigationBusy}><RefreshCw size={16} /> Tải lại</button>
-        <button ref={newButton} type="button" className="primary-button new-note-button" disabled={navigationBusy} onClick={() => void openNew()}><Plus size={17} /> Ghi chú mới</button>
+        <div className="note-create-actions"><button ref={newButton} type="button" className="primary-button new-note-button" disabled={navigationBusy} onClick={() => void openNew()}><Plus size={17} /> Ghi chú mới</button>
+          <span ref={setAttachmentTarget} className="attachment-toolbar-slot" />
+          {!editor&&<button type="button" className="quiet-button attach-file-button" disabled={navigationBusy||Boolean(liveNote)} onClick={()=>void openNew()} title="Tạo ghi chú, nhập tiêu đề và nội dung rồi thêm tệp"><Paperclip size={17}/>Thêm tệp đính kèm</button>}
+        </div>
       </div>
     </div>
     {!editor && !liveNote && <button type="button" className="quick-note" onClick={() => void openNew()} disabled={navigationBusy}><Plus size={20} />Ghi lại điều gì đó…<span>Tự lưu</span></button>}
@@ -478,7 +482,7 @@ export function NotesWorkspace({ onSessionExpired, onDirtyChange, authentication
       onChange={changeDraft} onClose={() => void closeEditor()} disabled={navigationBusy} readOnly={editor.note?.share?.permission==='read'}
       saveStatus={editor.status} saveError={editor.error} fieldErrors={editor.fields}
       onRetry={() => {if(editor.note?.protected&&editor.error?.includes('bảo vệ'))setLockedId(editor.note.id);else void autosave.retry();}} onDelete={editor.note?.share?undefined:() => void deleteNote()}
-      attachments={<NoteAttachments key={editor.note?.id??'draft'} noteId={editor.note?.id??null} readOnly={editor.note?.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />}
+      attachments={<NoteAttachments key={editor.note?.id??'draft'} noteId={editor.note?.id??null} actionTarget={attachmentTarget} readOnly={editor.note?.share?.permission==='read'} beforeUpload={async () => { await autosave.flush(); return autosave.getState()?.status === 'saved'; }} />}
       organization={<>{editor.note?.share&&<p className="notice success">{editor.note.share.ownerName} chia sẻ · {editor.note.share.permission==='read'?'Chỉ đọc':'Được sửa'} · {new Date(editor.note.share.sharedAt).toLocaleString('vi-VN')}</p>}
         {editor.note&&<button type="button" className="quiet-button" disabled={navigationBusy} onClick={()=>void organizedAction(async()=>{
           const id=autosave.getState()?.note?.id;if(!id)return;

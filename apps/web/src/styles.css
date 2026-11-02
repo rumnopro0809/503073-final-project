@@ -1503,6 +1503,8 @@ form .primary-button {
 @media(max-width:720px) { .note-questions textarea { font-size:16px; } }
 .note-attachments h3 { margin-top:0; font-size:15px; }
 .attach-file-button { display:inline-flex; align-items:center; gap:8px; min-height:42px; border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+.note-create-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.attachment-toolbar-slot { display:contents; }
 .note-attachments p { font-size:12px; line-height:1.7; color:var(--muted); }
 .note-attachments label { display:grid; gap:8px; font-size:13px; }
 .note-attachments input { max-width:100%; font:inherit; }
