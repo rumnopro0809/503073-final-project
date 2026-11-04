@@ -77,14 +77,6 @@ npm run build
 
 148/148 test đạt sau khi bắt buộc đăng nhập và gỡ chức năng ngoài đề, TypeScript và build đạt. Sau khi build có thể chạy **npm start** với cấu hình local mặc định để chạy API; lệnh dev ở trên là cách đơn giản để chạy cả giao diện/API. Production phục vụ build/web qua Express khi NODE_ENV=production và đã cấu hình PostgreSQL, HTTPS APP_URL cùng SMTP hoặc mail disabled rõ ràng.
 
-## Phạm vi chưa hoàn chỉnh và hồ sơ còn thiếu
-
-- **Mục 31 chưa triển khai**: đã gỡ chế độ khách để tuân thủ yêu cầu bắt buộc đăng nhập; chưa có service worker/cache tài khoản và đồng bộ offline. Không khai điểm guest một phần.
-- Chưa xác nhận thử tay video MP4/WebM; cần thử và quay trước khi khai mục 15 đầy đủ.
-- Chưa có **demo.mp4** hoặc link YouTube: cần cả hai thành viên, tối thiểu 1080p, âm thanh rõ, giới thiệu kiến trúc/công nghệ và trình diễn tuần tự từng mục đã làm. Mục không xuất hiện trong video không được tính.
-- Nếu khai đạt điều kiện GitHub: cần **Screenshot.png** từ Insights thật và source clone còn .git. Nếu không đạt, đề cho phép bỏ bằng chứng và áp dụng trừ 0,5. Chưa chứng minh đủ điều kiện 4 tuần/2 thành viên; tổng tự đánh giá chưa trừ 0,5 nếu thiếu điều kiện này. Source sạch không kèm .git và không khai đủ điều kiện đóng góp.
-- Rubric.xlsx/ZIP cũ là snapshot trước đợt gỡ tính năng. Cần cập nhật điểm mục 31 về chưa triển khai và đóng lại trước khi nộp; không dùng tổng 9,75 trước đó làm điểm cuối. Nếu thầy cấp mẫu, chuyển thông tin vào đúng mẫu.
-
 ## Thành phần gói đang chuẩn bị
 
 source/ chứa frontend/backend, test, package-lock, schema/migration, script seed và hướng dẫn. Root có README.md, Readme.txt và Rubric.xlsx. Không kèm node_modules, build, .data, .env thật, log hay khóa dịch vụ. Dữ liệu mẫu được tạo bằng script thay vì nộp database chứa dữ liệu cá nhân. Đây là bộ **source + rubric + hướng dẫn**, cần đóng lại sau chỉnh sửa source và bổ sung video trước khi nộp toàn bộ.
